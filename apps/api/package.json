@@ -11,7 +11,8 @@
   "type": "module",
   "dependencies": {
     "cors": "^2.8.6",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "@morago/contracts": "workspace:*"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
