@@ -1,0 +1,371 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// ---------- Enums ----------
+
+enum Role {
+  USER
+  TRANSLATOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+}
+
+enum VerificationStatus {
+  REGISTERED
+  INTERVIEW_SCHEDULED
+  APPROVED
+  REJECTED
+}
+
+enum CallType {
+  AUDIO
+  VIDEO
+}
+
+enum CallStatus {
+  REQUESTED
+  ACCEPTED
+  ACTIVE
+  ENDED
+  MISSED
+  REJECTED
+  FAILED
+}
+
+enum TransactionType {
+  TOPUP
+  ADMIN_CHARGE
+  CALL_CHARGE
+  CALL_EARNING
+  COMMISSION
+  PAYOUT
+  REFUND
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum PayoutStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+}
+
+enum VerificationPurpose {
+  REGISTRATION
+  LOGIN
+}
+
+enum NotificationType {
+  INCOMING_CALL
+  CALL_STATUS
+  SYSTEM
+}
+
+// ---------- Users ----------
+
+model User {
+  id                   Int        @id @default(autoincrement())
+  phone                String     @unique @db.VarChar(20)
+  email                String?    @unique @db.VarChar(255)
+  passwordHash         String     @map("password_hash")
+  role                 Role       @default(USER)
+  fullName             String     @map("full_name") @db.VarChar(150)
+  avatarFileId         Int?       @map("avatar_file_id")
+  status               UserStatus @default(ACTIVE)
+  blockedAt            DateTime?  @map("blocked_at")
+  blockReason          String?    @map("block_reason") @db.VarChar(500)
+  notificationsEnabled Boolean    @default(true) @map("notifications_enabled")
+  phoneVerifiedAt      DateTime?  @map("phone_verified_at")
+  createdAt            DateTime   @default(now()) @map("created_at")
+
+  avatarFile          File?                @relation("UserAvatar", fields: [avatarFileId], references: [id], onDelete: SetNull)
+  translatorProfile   TranslatorProfile?
+  wallet              Wallet?
+  callsAsClient       Call[]               @relation("CallClient")
+  reviewsWritten      Review[]             @relation("ReviewAuthor")
+  messages            Message[]
+  notifications       Notification[]
+  passwordResetTokens PasswordResetToken[]
+  uploadedFiles       File[]               @relation("FileOwner")
+  transactionsCreated Transaction[]        @relation("TransactionCreatedBy")
+  payoutsProcessed    PayoutRequest[]      @relation("PayoutProcessedBy")
+
+  @@map("users")
+}
+
+model TranslatorProfile {
+  userId             Int                @id @map("user_id")
+  dateOfBirth        DateTime?          @map("date_of_birth") @db.Date
+  topikLevel         Int?               @map("topik_level")
+  pricePerMinute     Decimal            @default(0) @map("price_per_minute") @db.Decimal(14, 2)
+  isOnline           Boolean            @default(false) @map("is_online")
+  verificationStatus VerificationStatus @default(REGISTERED) @map("verification_status")
+  ratingAvg          Decimal            @default(0) @map("rating_avg") @db.Decimal(3, 2)
+  reviewsCount       Int                @default(0) @map("reviews_count")
+
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  languages      TranslatorLanguage[]
+  themes         TranslatorTheme[]
+  calls          Call[]               @relation("CallTranslator")
+  reviews        Review[]
+  payoutRequests PayoutRequest[]
+
+  @@index([isOnline, verificationStatus])
+  @@map("translator_profiles")
+}
+
+// ---------- Reference data ----------
+
+model Language {
+  id   Int    @id @default(autoincrement())
+  code String @unique @db.VarChar(10)
+  name String @db.VarChar(100)
+
+  translators TranslatorLanguage[]
+  calls       Call[]
+
+  @@map("languages")
+}
+
+model TranslatorLanguage {
+  translatorId Int @map("translator_id")
+  languageId   Int @map("language_id")
+
+  translator TranslatorProfile @relation(fields: [translatorId], references: [userId], onDelete: Cascade)
+  language   Language          @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  @@id([translatorId, languageId])
+  @@map("translator_languages")
+}
+
+model Category {
+  id         Int     @id @default(autoincrement())
+  name       String  @unique @db.VarChar(100)
+  iconFileId Int?    @map("icon_file_id")
+  isActive   Boolean @default(true) @map("is_active")
+
+  iconFile File?   @relation("CategoryIcon", fields: [iconFileId], references: [id], onDelete: SetNull)
+  themes   Theme[]
+
+  @@map("categories")
+}
+
+model Theme {
+  id          Int     @id @default(autoincrement())
+  categoryId  Int?    @map("category_id")
+  name        String  @db.VarChar(150)
+  nameKo      String? @map("name_ko") @db.VarChar(150)
+  description String? @db.Text
+  iconFileId  Int?    @map("icon_file_id")
+  isEmergency Boolean @default(false) @map("is_emergency")
+  isActive    Boolean @default(true) @map("is_active")
+
+  category    Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  iconFile    File?             @relation("ThemeIcon", fields: [iconFileId], references: [id], onDelete: SetNull)
+  translators TranslatorTheme[]
+  calls       Call[]
+
+  @@map("themes")
+}
+
+model TranslatorTheme {
+  translatorId    Int     @map("translator_id")
+  themeId         Int     @map("theme_id")
+  withCertificate Boolean @default(false) @map("with_certificate")
+
+  translator TranslatorProfile @relation(fields: [translatorId], references: [userId], onDelete: Cascade)
+  theme      Theme             @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@id([translatorId, themeId])
+  @@map("translator_themes")
+}
+
+model File {
+  id        Int      @id @default(autoincrement())
+  ownerId   Int?     @map("owner_id")
+  url       String   @db.VarChar(500)
+  mimeType  String   @map("mime_type") @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  owner      User?      @relation("FileOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  userAvatars User[]    @relation("UserAvatar")
+  categories Category[] @relation("CategoryIcon")
+  themes     Theme[]    @relation("ThemeIcon")
+
+  @@map("files")
+}
+
+// ---------- Calls ----------
+
+model Call {
+  id             Int        @id @default(autoincrement())
+  clientId       Int        @map("client_id")
+  translatorId   Int        @map("translator_id")
+  languageId     Int        @map("language_id")
+  themeId        Int        @map("theme_id")
+  type           CallType   @default(AUDIO)
+  status         CallStatus @default(REQUESTED)
+  pricePerMinute Decimal    @map("price_per_minute") @db.Decimal(14, 2)
+  requestedAt    DateTime   @default(now()) @map("requested_at")
+  startedAt      DateTime?  @map("started_at")
+  endedAt        DateTime?  @map("ended_at")
+  durationSec    Int?       @map("duration_sec")
+  totalCost      Decimal?   @map("total_cost") @db.Decimal(14, 2)
+
+  client       User              @relation("CallClient", fields: [clientId], references: [id])
+  translator   TranslatorProfile @relation("CallTranslator", fields: [translatorId], references: [userId])
+  language     Language          @relation(fields: [languageId], references: [id])
+  theme        Theme             @relation(fields: [themeId], references: [id])
+  review       Review?
+  messages     Message[]
+  transactions Transaction[]
+
+  @@index([clientId])
+  @@index([translatorId])
+  @@index([status])
+  @@map("calls")
+}
+
+model Review {
+  id           Int      @id @default(autoincrement())
+  callId       Int      @unique @map("call_id")
+  authorId     Int      @map("author_id")
+  translatorId Int      @map("translator_id")
+  rating       Int
+  comment      String?  @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  call       Call              @relation(fields: [callId], references: [id], onDelete: Cascade)
+  author     User              @relation("ReviewAuthor", fields: [authorId], references: [id])
+  translator TranslatorProfile @relation(fields: [translatorId], references: [userId])
+
+  @@index([translatorId])
+  @@map("reviews")
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  callId    Int      @map("call_id")
+  senderId  Int      @map("sender_id")
+  text      String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  call   Call @relation(fields: [callId], references: [id], onDelete: Cascade)
+  sender User @relation(fields: [senderId], references: [id])
+
+  @@index([callId, createdAt])
+  @@map("messages")
+}
+
+// ---------- Money ----------
+
+model Wallet {
+  id       Int     @id @default(autoincrement())
+  userId   Int     @unique @map("user_id")
+  balance  Decimal @default(0) @db.Decimal(14, 2)
+  currency String  @default("KRW") @db.VarChar(3)
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@map("wallets")
+}
+
+model Transaction {
+  id              Int               @id @default(autoincrement())
+  walletId        Int               @map("wallet_id")
+  callId          Int?              @map("call_id")
+  payoutRequestId Int?              @unique @map("payout_request_id")
+  createdById     Int?              @map("created_by")
+  type            TransactionType
+  amount          Decimal           @db.Decimal(14, 2)
+  status          TransactionStatus @default(PENDING)
+  providerRef     String?           @map("provider_ref") @db.VarChar(100)
+  createdAt       DateTime          @default(now()) @map("created_at")
+
+  wallet        Wallet         @relation(fields: [walletId], references: [id])
+  call          Call?          @relation(fields: [callId], references: [id], onDelete: SetNull)
+  payoutRequest PayoutRequest? @relation(fields: [payoutRequestId], references: [id], onDelete: SetNull)
+  createdBy     User?          @relation("TransactionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([walletId, createdAt])
+  @@index([callId])
+  @@map("transactions")
+}
+
+model PayoutRequest {
+  id            Int          @id @default(autoincrement())
+  translatorId  Int          @map("translator_id")
+  amount        Decimal      @db.Decimal(14, 2)
+  bankName      String       @map("bank_name") @db.VarChar(100)
+  accountNumber String       @map("account_number") @db.VarChar(50)
+  status        PayoutStatus @default(PENDING)
+  processedById Int?         @map("processed_by")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  processedAt   DateTime?    @map("processed_at")
+
+  translator  TranslatorProfile @relation(fields: [translatorId], references: [userId])
+  processedBy User?             @relation("PayoutProcessedBy", fields: [processedById], references: [id], onDelete: SetNull)
+  transaction Transaction?
+
+  @@index([translatorId])
+  @@index([status])
+  @@map("payout_requests")
+}
+
+// ---------- Auth and notifications ----------
+
+model VerificationCode {
+  id        Int                 @id @default(autoincrement())
+  phone     String              @db.VarChar(20)
+  purpose   VerificationPurpose
+  codeHash  String              @map("code_hash")
+  attempts  Int                 @default(0)
+  expiresAt DateTime            @map("expires_at")
+  usedAt    DateTime?           @map("used_at")
+
+  @@index([phone, purpose])
+  @@map("verification_codes")
+}
+
+model PasswordResetToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  tokenHash String    @unique @map("token_hash") @db.VarChar(128)
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+}
+
+model Notification {
+  id        Int              @id @default(autoincrement())
+  userId    Int              @map("user_id")
+  type      NotificationType
+  payload   Json?
+  isRead    Boolean          @default(false) @map("is_read")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
