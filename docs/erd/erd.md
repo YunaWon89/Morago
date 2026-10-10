@@ -1,7 +1,7 @@
 # MORAGO — ERD (первая версия для обсуждения)
 
-> Модель данных составлена по макетам Figma (клиент, переводчик, админка), таблице мест/сфер и описанию проекта.
-> Детали, которые не удалось однозначно определить по макетам, вынесены в раздел «Вопросы».
+> Модель данных составлена по макетам Figma (клиент, переводчик, админка), таблице мест/сфер, описанию проекта и согласованным требованиям.
+> Детали, которые не удалось однозначно определить, вынесены в раздел «Вопросы».
 
 Цепочка работы: **макеты и требования → бизнес-сущности → связи → таблицы**.
 
@@ -47,6 +47,7 @@ erDiagram
     USER ||--o| TRANSLATOR_PROFILE : "has (if translator)"
     USER ||--|| WALLET : owns
     USER ||--o{ NOTIFICATION : receives
+    USER ||--o{ PASSWORD_RESET_TOKEN : requests
     FILE |o--o{ USER : "avatar"
 
     CATEGORY |o--o{ THEME : contains
@@ -64,6 +65,8 @@ erDiagram
     THEME ||--o{ CALL : "theme of"
 
     CALL ||--o| REVIEW : "rated by"
+    CALL ||--o{ MESSAGE : contains
+    USER ||--o{ MESSAGE : sends
     TRANSLATOR_PROFILE ||--o{ REVIEW : "gets"
 
     WALLET ||--o{ TRANSACTION : records
@@ -73,13 +76,15 @@ erDiagram
 
     USER {
         bigint id PK
-        string phone UK "main login for user and translator"
-        string email UK "nullable, for admin"
+        string phone UK "login, code is sent by SMS"
+        string email UK "nullable, used for password recovery"
         string password_hash
         string role "USER | TRANSLATOR | ADMIN"
         string full_name
         bigint avatar_file_id FK
         string status "ACTIVE | BLOCKED"
+        datetime blocked_at "nullable"
+        string block_reason "nullable"
         boolean notifications_enabled "Profile > Notifications"
         datetime phone_verified_at
         datetime created_at
@@ -89,7 +94,7 @@ erDiagram
         bigint user_id PK, FK
         date date_of_birth
         int topik_level "Korean level (TOPIK)"
-        decimal price_per_minute "to confirm"
+        decimal price_per_minute "set by the translator, KRW"
         boolean is_online "Available / Not available"
         string verification_status "REGISTERED | INTERVIEW_SCHEDULED | APPROVED | REJECTED"
         decimal rating_avg
@@ -134,11 +139,20 @@ erDiagram
     VERIFICATION_CODE {
         bigint id PK
         string phone
-        string purpose "REGISTRATION | PASSWORD_RESET"
+        string purpose "REGISTRATION | LOGIN"
         string code_hash
         int attempts
         datetime expires_at
         datetime used_at
+    }
+
+    PASSWORD_RESET_TOKEN {
+        bigint id PK
+        bigint user_id FK
+        string token_hash
+        datetime expires_at
+        datetime used_at "nullable"
+        datetime created_at
     }
 
     FILE {
@@ -155,6 +169,7 @@ erDiagram
         bigint translator_id FK
         int language_id FK
         int theme_id FK
+        string type "AUDIO | VIDEO"
         string status "REQUESTED | ACCEPTED | ACTIVE | ENDED | MISSED | REJECTED | FAILED"
         decimal price_per_minute "snapshot at call time"
         datetime requested_at
@@ -171,6 +186,14 @@ erDiagram
         bigint translator_id FK
         int rating "1-5 stars"
         string comment
+        datetime created_at
+    }
+
+    MESSAGE {
+        bigint id PK
+        bigint call_id FK
+        bigint sender_id FK
+        string text
         datetime created_at
     }
 
@@ -223,35 +246,39 @@ erDiagram
 | Что видно в макетах | Сущность | Пояснение |
 |---|---|---|
 | Регистрация и вход клиента, переводчика, админа; пароль; код из SMS | **User**, **VerificationCode** | Одна таблица для трёх ролей, вход по телефону |
+| Восстановление пароля (через почту) | **PasswordResetToken**, `user.email` | Одноразовая ссылка на email, срок действия ограничен |
 | Edit Profile переводчика: ФИО, дата рождения, уровень корейского (TOPIK), статус Available / Not available | **TranslatorProfile** | Данные, которые есть только у переводчика |
 | SMS со ссылкой на интервью после регистрации переводчика | `verification_status` | Статусы проверки: регистрация → интервью → одобрен / отклонён |
 | Чипы «Available translation languages» | **Language**, **TranslatorLanguage** | Связь N:M |
 | Таблица мест и сфер (Больница, Банк, Суд ...), разделы Themes и Categories в админке, экран выбора темы | **Category**, **Theme** | Связь 1:N: сфера содержит места |
 | «Topics for translator» и «Topics for translation with certificate» | **TranslatorTheme** | Связь N:M, флаг `with_certificate` |
-| Экраны Call, Recent, история звонков | **Call** | Статусы, тема, язык, время, стоимость |
+| Экраны Call, Recent, история звонков; аудио- и видеозвонок | **Call** | Статусы, тип звонка (`type`), тема, язык, время, стоимость |
+| Чат клиента и переводчика | **Message** | Сообщения привязаны к звонку |
 | Экран с пятью звёздами после звонка | **Review** | Один отзыв на звонок |
 | Balance клиента и переводчика, Top up, Details | **Wallet**, **Transaction** | Баланс и журнал операций |
 | Withdrawal of funds (банк, номер счёта, сумма) | **PayoutRequest** | Заявка на вывод |
 | Админка: Charge, Deposit history, Withdraw, Withdraw history | **Transaction** (типы `ADMIN_CHARGE`, `PAYOUT`), `created_by` | Ручное пополнение и вывод оформляет админ |
 | Экран Notification | **Notification** | История уведомлений |
 | Аватары, иконки категорий и тем | **File** | Одна таблица для всех файлов |
-| Админка: списки Translator и User, формы Add new, блокировка | **User**, **TranslatorProfile** (`status`, `verification_status`) | Новых таблиц не нужно |
+| Админка: списки Translator и User, формы Add new, блокировка | **User**, **TranslatorProfile** (`status`, `blocked_at`, `block_reason`, `verification_status`) | Новых таблиц не нужно |
 
 ## 3. Сущности
 
 | Сущность | Зачем нужна | Главные поля |
 |---|---|---|
-| **User** | Один вход для всех трёх ролей (клиент, переводчик, админ) | `phone`, `password_hash`, `role`, `status` |
+| **User** | Один вход для всех трёх ролей (клиент, переводчик, админ) | `phone`, `email`, `password_hash`, `role`, `status`, `block_reason` |
 | **TranslatorProfile** | Данные, которые есть только у переводчика. В User они были бы пустыми у остальных | `topik_level`, `is_online`, `verification_status`, `rating_avg` |
 | **Language** | Справочник языков для фильтра и звонка | `code`, `name` |
 | **Category** | Сфера: группа тем (Медицина, Авто, Закон ...) | `name`, `icon_file_id` |
 | **Theme** | Конкретное место внутри сферы (Больница, Банк, Суд ...) | `category_id`, `name`, `name_ko`, `is_emergency` |
-| **Call** | Один звонок между клиентом и переводчиком, центральная сущность | `client_id`, `translator_id`, `theme_id`, `status`, `started_at`, `total_cost` |
+| **Call** | Один звонок (аудио или видео) между клиентом и переводчиком, центральная сущность | `client_id`, `translator_id`, `theme_id`, `type`, `status`, `started_at`, `total_cost` |
 | **Review** | Оценка после звонка | `call_id`, `rating`, `comment` |
+| **Message** | Сообщение в чате во время звонка | `call_id`, `sender_id`, `text`, `created_at` |
 | **Wallet** | Кошелёк пользователя (у клиента и у переводчика) | `user_id`, `balance`, `currency` |
 | **Transaction** | Журнал: каждое движение денег отдельной строкой | `wallet_id`, `type`, `amount`, `status` |
 | **PayoutRequest** | Заявка переводчика на вывод средств | `translator_id`, `amount`, `bank_name`, `account_number`, `status` |
-| **VerificationCode** | SMS-код для регистрации и сброса пароля | `phone`, `purpose`, `code_hash`, `expires_at` |
+| **VerificationCode** | SMS-код для регистрации и входа | `phone`, `purpose`, `code_hash`, `expires_at` |
+| **PasswordResetToken** | Одноразовый токен для восстановления пароля по почте | `user_id`, `token_hash`, `expires_at`, `used_at` |
 | **Notification** | История уведомлений пользователя | `user_id`, `type`, `payload`, `is_read` |
 | **File** | Все загруженные файлы в одном месте | `url`, `mime_type` |
 
@@ -272,6 +299,9 @@ erDiagram
 | TranslatorProfile — Call | 1:N | Переводчик принимает много звонков, у звонка один переводчик | `call.translator_id`, FK |
 | Theme — Call | 1:N | По одной теме бывает много звонков, у звонка одна тема | `call.theme_id`, FK |
 | Language — Call | 1:N | На одном языке бывает много звонков, у звонка один язык | `call.language_id`, FK |
+| Call — Message | 1:N | В звонке много сообщений, сообщение относится к одному звонку | `message.call_id`, FK |
+| User — Message | 1:N | Пользователь отправляет много сообщений, у сообщения один отправитель | `message.sender_id`, FK |
+| User — PasswordResetToken | 1:N | Пользователь может запросить восстановление несколько раз, токен принадлежит одному пользователю | `password_reset_token.user_id`, FK |
 | Call — Review | 1:0..1 | У звонка может быть не больше одного отзыва (или ни одного), у отзыва ровно один звонок | `review.call_id`, FK с UNIQUE |
 | TranslatorProfile — Review | 1:N | Переводчик получает много отзывов, отзыв адресован одному переводчику | `review.translator_id`, FK |
 | Wallet — Transaction | 1:N | В кошельке много операций, операция относится к одному кошельку | `transaction.wallet_id`, FK |
@@ -291,12 +321,15 @@ erDiagram
 4. **Деньги хранятся как DECIMAL**, валюта KRW.
 5. **Статусы переводчика**: после регистрации REGISTERED, после SMS со ссылкой на интервью INTERVIEW_SCHEDULED, затем админ ставит APPROVED или REJECTED. Принимать звонки может только APPROVED.
 6. **Админ может создавать клиентов и переводчиков** (формы Add new / Add translator) и вручную пополнять баланс клиента (Charge).
+7. **Цену за минуту задаёт переводчик**, она хранится в `TranslatorProfile.price_per_minute`. Оплата ведётся за минуты разговора в KRW.
+8. **Вход по номеру телефона с кодом из SMS, восстановление пароля по почте.** Поэтому в User есть и `phone`, и `email`, а для сброса пароля используется отдельная таблица PasswordResetToken (в базе хранится хэш токена).
+9. **Функции админа ограничены**: блокировка пользователей (`status = BLOCKED`, дата и причина) и разбор вопросов по оплате через Transaction и PayoutRequest. Исправления баланса оформляются новой записью в журнале, старые записи не меняются.
+10. **Чат и видео входят в модель**: сообщения хранятся в Message, тип звонка в `Call.type`.
 
 ## 6. Не включено в модель (нет в макетах)
 
-- **Жалобы и модерация звонков** (Complaint). Упомянуты в описании проекта, но экранов нет.
+- **Жалобы и модерация звонков** (Complaint). Упомянуты в описании проекта, но экранов нет. Админ блокирует пользователей по собственному решению, без отдельной цепочки «жалоба → рассмотрение».
 - **Документы для проверки переводчика** (VerificationDocument). В макетах проверка идёт через интервью, загрузки документов не видно.
-- **Чат** (Conversation, Message). Два клиентских экрана похожи на сообщения, но это не подтверждено.
 - **Избранные переводчики**, **промокоды**, **расписание работы**. В макетах не найдены.
 
 При необходимости соответствующие таблицы добавляются отдельно, остальная модель не меняется.
@@ -322,25 +355,27 @@ erDiagram
 | Этап | Что сделано / будет сделано |
 |---|---|
 | **Готово (неделя 1)** | Каркас monorepo: `apps/web` (Vite + React + TypeScript), `apps/api` (Express + TypeScript, маршрут `/health`), `packages/contracts` (общие типы). Оба приложения запускаются из корня командой `pnpm dev`. Составлен этот ERD. |
-| **Задание 2** | Перенос всей модели в `apps/api/prisma/schema.prisma`, миграции MySQL, seed (Language, Category, Theme), CRUD, регистрация и вход (JWT, bcrypt), роли, пагинация и фильтры, уведомления через Socket.io, основа WebRTC |
-| **Задание 3** | Логика звонка (статусы, длительность, стоимость), Transaction и PayoutRequest (пополнение, списание, вывод), сигналинг WebRTC, хранилище файлов (S3, опционально) |
-| **Финал** | Блокировка аккаунтов и проверка переводчиков, сброс пароля (VerificationCode), загрузка файлов, Swagger, логирование, деплой |
+| **Задание 2** | Перенос всей модели в `apps/api/prisma/schema.prisma`, миграции MySQL, seed (Language, Category, Theme), CRUD, регистрация и вход (JWT, bcrypt), роли, пагинация и фильтры, уведомления и чат через Socket.io, основа WebRTC (аудио и видео) |
+| **Задание 3** | Логика звонка (тип, статусы, длительность, стоимость за минуту), Transaction и PayoutRequest (пополнение, списание, вывод), сигналинг WebRTC, хранилище файлов (S3, опционально) |
+| **Финал** | Блокировка аккаунтов и проверка переводчиков, сброс пароля по почте (PasswordResetToken), загрузка файлов, Swagger, логирование, деплой |
 
 Таблицы в базе данных будут созданы после согласования ERD.
 
 ## 9. Вопросы
 
-Эти вопросы влияют на структуру таблиц и требуют решения до создания схемы.
+Эти вопросы влияют на структуру таблиц.
 
-1. **Вход:** по телефону с SMS-кодом (как в Figma) или по email (как в заданиях)? От этого зависят поля User и VerificationCode, а также восстановление пароля. Сейчас в модели телефон.
-2. **Цена звонка:** «Fee / Per call» на экране входящего звонка это цена за минуту или фиксированная цена за звонок, и кто её задаёт? Сейчас в модели цена за минуту, тариф у переводчика, снимок в Call.
-3. **Чат:** есть ли переписка между клиентом и переводчиком? Два клиентских экрана похожи на сообщения, но это не подтверждено. Сейчас чата в модели нет.
+1. **Чат:** сообщения нужны только во время звонка или и до него (переписка клиента с переводчиком до звонка)? Сейчас сообщения привязаны к звонку (`message.call_id`).
+2. **Видео:** цена за минуту видеозвонка такая же, как за аудио, или у переводчика два тарифа? Сейчас тариф один.
+3. **Email:** обязателен ли он при регистрации? Сейчас поле необязательное, но без email восстановить пароль нельзя.
 
 ## 10. Допущения (требуют подтверждения)
 
 Модель построена на следующих допущениях:
 
-- звонки только аудио (в Figma только аудио);
+- видео- и аудиозвонок используют один тариф за минуту;
+- чат привязан к звонку, отдельных диалогов вне звонков нет;
+- ссылка для восстановления пароля действует ограниченное время и используется один раз;
 - «Topics for translation with certificate» это отметка `with_certificate`, без загрузки файла;
 - оценку после звонка ставит только клиент;
 - банковские реквизиты вводятся при каждом выводе и хранятся в PayoutRequest;
