@@ -65,8 +65,11 @@ erDiagram
     THEME ||--o{ CALL : "theme of"
 
     CALL ||--o| REVIEW : "rated by"
-    CALL ||--o{ MESSAGE : contains
+    USER ||--o{ CONVERSATION : "client in"
+    TRANSLATOR_PROFILE ||--o{ CONVERSATION : "translator in"
+    CONVERSATION ||--o{ MESSAGE : contains
     USER ||--o{ MESSAGE : sends
+    CALL |o--o{ MESSAGE : "sent during"
     TRANSLATOR_PROFILE ||--o{ REVIEW : "gets"
 
     WALLET ||--o{ TRANSACTION : records
@@ -189,11 +192,21 @@ erDiagram
         datetime created_at
     }
 
+    CONVERSATION {
+        bigint id PK
+        bigint client_id FK "unique together with translator_id"
+        bigint translator_id FK
+        datetime created_at
+        datetime last_message_at "nullable"
+    }
+
     MESSAGE {
         bigint id PK
-        bigint call_id FK
+        bigint conversation_id FK
         bigint sender_id FK
+        bigint call_id FK "nullable, set when sent during a call"
         string text
+        datetime read_at "nullable"
         datetime created_at
     }
 
@@ -253,7 +266,7 @@ erDiagram
 | Таблица мест и сфер (Больница, Банк, Суд ...), разделы Themes и Categories в админке, экран выбора темы | **Category**, **Theme** | Связь 1:N: сфера содержит места |
 | «Topics for translator» и «Topics for translation with certificate» | **TranslatorTheme** | Связь N:M, флаг `with_certificate` |
 | Экраны Call, Recent, история звонков; аудио- и видеозвонок | **Call** | Статусы, тип звонка (`type`), тема, язык, время, стоимость |
-| Чат клиента и переводчика | **Message** | Сообщения привязаны к звонку |
+| Чат клиента и переводчика (до, во время и после звонка) | **Conversation**, **Message** | Одна переписка на пару «клиент – переводчик», сообщения могут ссылаться на звонок |
 | Экран с пятью звёздами после звонка | **Review** | Один отзыв на звонок |
 | Balance клиента и переводчика, Top up, Details | **Wallet**, **Transaction** | Баланс и журнал операций |
 | Withdrawal of funds (банк, номер счёта, сумма) | **PayoutRequest** | Заявка на вывод |
@@ -273,7 +286,8 @@ erDiagram
 | **Theme** | Конкретное место внутри сферы (Больница, Банк, Суд ...) | `category_id`, `name`, `name_ko`, `is_emergency` |
 | **Call** | Один звонок (аудио или видео) между клиентом и переводчиком, центральная сущность | `client_id`, `translator_id`, `theme_id`, `type`, `status`, `started_at`, `total_cost` |
 | **Review** | Оценка после звонка | `call_id`, `rating`, `comment` |
-| **Message** | Сообщение в чате во время звонка | `call_id`, `sender_id`, `text`, `created_at` |
+| **Conversation** | Переписка между одним клиентом и одним переводчиком, не зависит от звонков | `client_id`, `translator_id`, `last_message_at` |
+| **Message** | Сообщение в переписке; если отправлено во время звонка, хранит ссылку на него | `conversation_id`, `sender_id`, `call_id`, `text`, `read_at` |
 | **Wallet** | Кошелёк пользователя (у клиента и у переводчика) | `user_id`, `balance`, `currency` |
 | **Transaction** | Журнал: каждое движение денег отдельной строкой | `wallet_id`, `type`, `amount`, `status` |
 | **PayoutRequest** | Заявка переводчика на вывод средств | `translator_id`, `amount`, `bank_name`, `account_number`, `status` |
@@ -299,7 +313,10 @@ erDiagram
 | TranslatorProfile — Call | 1:N | Переводчик принимает много звонков, у звонка один переводчик | `call.translator_id`, FK |
 | Theme — Call | 1:N | По одной теме бывает много звонков, у звонка одна тема | `call.theme_id`, FK |
 | Language — Call | 1:N | На одном языке бывает много звонков, у звонка один язык | `call.language_id`, FK |
-| Call — Message | 1:N | В звонке много сообщений, сообщение относится к одному звонку | `message.call_id`, FK |
+| Conversation — Message | 1:N | В переписке много сообщений, сообщение относится к одной переписке | `message.conversation_id`, FK |
+| User — Conversation | 1:N | Клиент участвует во многих переписках, у переписки один клиент | `conversation.client_id`, FK |
+| TranslatorProfile — Conversation | 1:N | Переводчик участвует во многих переписках, у переписки один переводчик | `conversation.translator_id`, FK |
+| Call — Message | 1:N (необязательная) | Во время звонка может быть ноль или много сообщений, сообщение может быть и без звонка | `message.call_id`, FK, nullable |
 | User — Message | 1:N | Пользователь отправляет много сообщений, у сообщения один отправитель | `message.sender_id`, FK |
 | User — PasswordResetToken | 1:N | Пользователь может запросить восстановление несколько раз, токен принадлежит одному пользователю | `password_reset_token.user_id`, FK |
 | Call — Review | 1:0..1 | У звонка может быть не больше одного отзыва (или ни одного), у отзыва ровно один звонок | `review.call_id`, FK с UNIQUE |
@@ -324,7 +341,8 @@ erDiagram
 7. **Цену за минуту задаёт переводчик**, она хранится в `TranslatorProfile.price_per_minute`. Оплата ведётся за минуты разговора в KRW.
 8. **Вход по номеру телефона с кодом из SMS, восстановление пароля по почте.** Поэтому в User есть и `phone`, и `email`, а для сброса пароля используется отдельная таблица PasswordResetToken (в базе хранится хэш токена).
 9. **Функции админа ограничены**: блокировка пользователей (`status = BLOCKED`, дата и причина) и разбор вопросов по оплате через Transaction и PayoutRequest. Исправления баланса оформляются новой записью в журнале, старые записи не меняются.
-10. **Чат и видео входят в модель**: сообщения хранятся в Message, тип звонка в `Call.type`.
+10. **Чат и видео входят в модель**: чат работает до, во время и после звонка. Переписка (Conversation) создаётся для пары «клиент – переводчик» и не зависит от звонков, сообщения (Message) принадлежат переписке и при отправке во время звонка ссылаются на него. Тип звонка хранится в `Call.type`.
+11. **Email обязателен при регистрации**, так как пароль восстанавливается по почте. В базе поле допускает пустое значение для записей, созданных админом.
 
 ## 6. Не включено в модель (нет в макетах)
 
@@ -365,16 +383,16 @@ erDiagram
 
 Эти вопросы влияют на структуру таблиц.
 
-1. **Чат:** сообщения нужны только во время звонка или и до него (переписка клиента с переводчиком до звонка)? Сейчас сообщения привязаны к звонку (`message.call_id`).
-2. **Видео:** цена за минуту видеозвонка такая же, как за аудио, или у переводчика два тарифа? Сейчас тариф один.
-3. **Email:** обязателен ли он при регистрации? Сейчас поле необязательное, но без email восстановить пароль нельзя.
+1. **Видео:** цена за минуту видеозвонка такая же, как за аудио, или у переводчика два тарифа? Сейчас тариф один.
+2. **Строка «Dentistry»** внизу исходной таблицы мест: это отдельная тема, сфера или лишняя запись? Пока не добавлена.
 
 ## 10. Допущения (требуют подтверждения)
 
 Модель построена на следующих допущениях:
 
 - видео- и аудиозвонок используют один тариф за минуту;
-- чат привязан к звонку, отдельных диалогов вне звонков нет;
+- у пары «клиент – переводчик» одна общая переписка, она существует независимо от звонков;
+- языки перевода: русский, корейский, английский, китайский;
 - ссылка для восстановления пароля действует ограниченное время и используется один раз;
 - «Topics for translation with certificate» это отметка `with_certificate`, без загрузки файла;
 - оценку после звонка ставит только клиент;

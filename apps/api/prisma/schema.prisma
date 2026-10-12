@@ -99,6 +99,7 @@ model User {
   callsAsClient       Call[]               @relation("CallClient")
   reviewsWritten      Review[]             @relation("ReviewAuthor")
   messages            Message[]
+  conversationsAsClient Conversation[]    @relation("ConversationClient")
   notifications       Notification[]
   passwordResetTokens PasswordResetToken[]
   uploadedFiles       File[]               @relation("FileOwner")
@@ -124,6 +125,7 @@ model TranslatorProfile {
   calls          Call[]               @relation("CallTranslator")
   reviews        Review[]
   payoutRequests PayoutRequest[]
+  conversations  Conversation[]       @relation("ConversationTranslator")
 
   @@index([isOnline, verificationStatus])
   @@map("translator_profiles")
@@ -258,17 +260,37 @@ model Review {
   @@map("reviews")
 }
 
+model Conversation {
+  id            Int       @id @default(autoincrement())
+  clientId      Int       @map("client_id")
+  translatorId  Int       @map("translator_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  lastMessageAt DateTime? @map("last_message_at")
+
+  client     User              @relation("ConversationClient", fields: [clientId], references: [id])
+  translator TranslatorProfile @relation("ConversationTranslator", fields: [translatorId], references: [userId])
+  messages   Message[]
+
+  @@unique([clientId, translatorId])
+  @@index([translatorId])
+  @@map("conversations")
+}
+
 model Message {
-  id        Int      @id @default(autoincrement())
-  callId    Int      @map("call_id")
-  senderId  Int      @map("sender_id")
-  text      String   @db.Text
-  createdAt DateTime @default(now()) @map("created_at")
+  id             Int       @id @default(autoincrement())
+  conversationId Int       @map("conversation_id")
+  senderId       Int       @map("sender_id")
+  callId         Int?      @map("call_id")
+  text           String    @db.Text
+  readAt         DateTime? @map("read_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
 
-  call   Call @relation(fields: [callId], references: [id], onDelete: Cascade)
-  sender User @relation(fields: [senderId], references: [id])
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id])
+  call         Call?        @relation(fields: [callId], references: [id], onDelete: SetNull)
 
-  @@index([callId, createdAt])
+  @@index([conversationId, createdAt])
+  @@index([callId])
   @@map("messages")
 }
 
