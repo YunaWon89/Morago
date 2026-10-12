@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import type { HealthResponse } from "@morago/contracts";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
+import { adminRouter } from "./modules/admin/admin.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { referenceRouter } from "./modules/reference/reference.routes.js";
 import { translatorsRouter } from "./modules/translators/translators.routes.js";
@@ -23,6 +24,7 @@ app.get("/health", (_req, res) => {
 app.use("/api/auth", authRouter);
 app.use("/api", referenceRouter);
 app.use("/api/translators", translatorsRouter);
+app.use("/api/admin", adminRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
