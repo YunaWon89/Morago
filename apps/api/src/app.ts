@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import type { HealthResponse } from "@morago/contracts";
+import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
+import { authRouter } from "./modules/auth/auth.routes.js";
 
 export const app = express();
 
@@ -15,3 +17,8 @@ app.get("/health", (_req, res) => {
   const body: HealthResponse = { status: "ok" };
   res.json(body);
 });
+
+app.use("/api/auth", authRouter);
+
+app.use(notFoundHandler);
+app.use(errorHandler);
