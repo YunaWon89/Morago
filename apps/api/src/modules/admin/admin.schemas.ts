@@ -28,3 +28,7 @@ export const listTranslatorsQuerySchema = z.object({
 export const verificationSchema = z.object({
   status: z.enum(["INTERVIEW_SCHEDULED", "APPROVED", "REJECTED"]),
 });
+
+export const chargeSchema = z.object({
+  amount: z.number().int().min(1).max(100_000_000),
+});

@@ -206,3 +206,29 @@ export async function setVerificationStatus(
 
   return { id, verificationStatus: status };
 }
+
+// Manual top-up of a user's balance by an admin ("Charge" in the admin panel).
+export async function chargeWallet(adminId: number, userId: number, amount: number) {
+  const wallet = await prisma.wallet.findUnique({ where: { userId } });
+  if (!wallet) {
+    throw new HttpError(404, "Wallet not found");
+  }
+
+  const [updated] = await prisma.$transaction([
+    prisma.wallet.update({
+      where: { id: wallet.id },
+      data: { balance: { increment: amount } },
+    }),
+    prisma.transaction.create({
+      data: {
+        walletId: wallet.id,
+        type: "ADMIN_CHARGE",
+        amount,
+        status: "COMPLETED",
+        createdById: adminId,
+      },
+    }),
+  ]);
+
+  return { userId, balance: Number(updated.balance), currency: updated.currency };
+}
