@@ -2,6 +2,7 @@ import { Router } from "express";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import {
   blockUserSchema,
+  chargeSchema,
   idParamSchema,
   listTranslatorsQuerySchema,
   listUsersQuerySchema,
@@ -9,6 +10,7 @@ import {
 } from "./admin.schemas.js";
 import {
   blockUser,
+  chargeWallet,
   getUserDetails,
   listTranslatorsForAdmin,
   listUsers,
@@ -50,4 +52,10 @@ adminRouter.patch("/translators/:id/verification", async (req, res) => {
   const { id } = idParamSchema.parse(req.params);
   const { status } = verificationSchema.parse(req.body ?? {});
   res.json(await setVerificationStatus(id, status));
+});
+
+adminRouter.post("/users/:id/charge", async (req, res) => {
+  const { id } = idParamSchema.parse(req.params);
+  const { amount } = chargeSchema.parse(req.body ?? {});
+  res.json(await chargeWallet(req.user!.id, id, amount));
 });

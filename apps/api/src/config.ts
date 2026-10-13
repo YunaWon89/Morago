@@ -8,6 +8,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
   JWT_EXPIRES_IN_DAYS: z.coerce.number().int().positive().default(7),
   CLIENT_URL: z.string().default("http://localhost:5173"),
+  PLATFORM_COMMISSION_PERCENT: z.coerce.number().min(0).max(100).default(20),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -30,4 +31,5 @@ export const config = {
   jwtSecret: env.JWT_SECRET,
   jwtExpiresInSeconds: env.JWT_EXPIRES_IN_DAYS * 24 * 60 * 60,
   clientUrl: env.CLIENT_URL,
+  commissionPercent: env.PLATFORM_COMMISSION_PERCENT,
 };
