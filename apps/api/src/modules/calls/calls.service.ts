@@ -4,6 +4,7 @@ import { HttpError } from "../../lib/http-error.js";
 import { calculateCost, splitCharge } from "../../lib/money.js";
 import { prisma } from "../../lib/prisma.js";
 import type { AuthUser } from "../../middleware/auth.js";
+import { emitToUser } from "../../realtime/io.js";
 
 // A request nobody answers within this time becomes MISSED.
 const REQUEST_TIMEOUT_MS = 60 * 1000;
@@ -47,14 +48,25 @@ function toCallDto(call: CallRow) {
 
 export async function expireStaleCalls() {
   const now = Date.now();
-  await prisma.call.updateMany({
-    where: { status: "REQUESTED", requestedAt: { lt: new Date(now - REQUEST_TIMEOUT_MS) } },
-    data: { status: "MISSED", endedAt: new Date() },
+  const stale = await prisma.call.findMany({
+    where: {
+      OR: [
+        { status: "REQUESTED", requestedAt: { lt: new Date(now - REQUEST_TIMEOUT_MS) } },
+        { status: "ACCEPTED", requestedAt: { lt: new Date(now - ACCEPTED_TIMEOUT_MS) } },
+      ],
+    },
+    select: { id: true, status: true },
   });
-  await prisma.call.updateMany({
-    where: { status: "ACCEPTED", requestedAt: { lt: new Date(now - ACCEPTED_TIMEOUT_MS) } },
-    data: { status: "FAILED", endedAt: new Date() },
-  });
+
+  for (const item of stale) {
+    const result = await prisma.call.updateMany({
+      where: { id: item.id, status: item.status },
+      data: { status: item.status === "REQUESTED" ? "MISSED" : "FAILED", endedAt: new Date() },
+    });
+    if (result.count > 0) {
+      await reload(item.id);
+    }
+  }
 }
 
 async function loadCall(callId: number, user: AuthUser): Promise<CallRow> {
@@ -67,9 +79,17 @@ async function loadCall(callId: number, user: AuthUser): Promise<CallRow> {
   return call;
 }
 
-async function reload(callId: number): Promise<ReturnType<typeof toCallDto>> {
+// Loads the call after a change and tells both participants about it in real time.
+async function reload(callId: number, options: { incoming?: boolean } = {}) {
   const call = await prisma.call.findUniqueOrThrow({ where: { id: callId }, include: callInclude });
-  return toCallDto(call);
+  const dto = toCallDto(call);
+
+  emitToUser(dto.client.id, "call:updated", dto);
+  emitToUser(dto.translator.id, "call:updated", dto);
+  if (options.incoming) {
+    emitToUser(dto.translator.id, "call:incoming", dto);
+  }
+  return dto;
 }
 
 export async function createCall(
@@ -132,7 +152,15 @@ export async function createCall(
       pricePerMinute: price,
     },
   });
-  return reload(call.id);
+
+  // The pair gets a shared chat so they can write to each other before and after the call.
+  await prisma.conversation.upsert({
+    where: { clientId_translatorId: { clientId, translatorId: input.translatorId } },
+    update: {},
+    create: { clientId, translatorId: input.translatorId },
+  });
+
+  return reload(call.id, { incoming: true });
 }
 
 export async function listMyCalls(

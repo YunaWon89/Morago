@@ -1,8 +1,13 @@
+import http from "node:http";
 import { app } from "./app.js";
 import { config } from "./config.js";
 import { expireStaleCalls } from "./modules/calls/calls.service.js";
+import { initSocket } from "./realtime/socket.js";
 
-app.listen(config.port, () => {
+const server = http.createServer(app);
+initSocket(server);
+
+server.listen(config.port, () => {
   console.log(`API running on http://localhost:${config.port}`);
 });
 
