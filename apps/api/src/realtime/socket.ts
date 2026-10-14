@@ -13,6 +13,10 @@ const signalSchema = z.object({
   data: z.unknown(),
 });
 
+// A translator who closes the last tab stays online for a short grace period (page reloads).
+const OFFLINE_GRACE_MS = 30_000;
+const offlineTimers = new Map<number, ReturnType<typeof setTimeout>>();
+
 type SignalAck = (result: { ok: boolean; error?: string }) => void;
 
 export function initSocket(httpServer: HttpServer) {
@@ -40,6 +44,41 @@ export function initSocket(httpServer: HttpServer) {
     // Every tab of the same user joins the same room.
     socket.join(`user:${user.id}`);
     socket.emit("ready", { userId: user.id, role: user.role });
+
+    const pending = offlineTimers.get(user.id);
+    if (pending) {
+      clearTimeout(pending);
+      offlineTimers.delete(user.id);
+    }
+
+    socket.on("disconnect", async () => {
+      if (user.role !== "TRANSLATOR") {
+        return;
+      }
+      try {
+        const room = `user:${user.id}`;
+        if ((await io.in(room).fetchSockets()).length > 0) {
+          return;
+        }
+        const timer = setTimeout(async () => {
+          offlineTimers.delete(user.id);
+          try {
+            if ((await io.in(room).fetchSockets()).length === 0) {
+              await prisma.translatorProfile.updateMany({
+                where: { userId: user.id, isOnline: true },
+                data: { isOnline: false },
+              });
+            }
+          } catch (error) {
+            console.error("failed to set translator offline", error);
+          }
+        }, OFFLINE_GRACE_MS);
+        timer.unref();
+        offlineTimers.set(user.id, timer);
+      } catch (error) {
+        console.error("disconnect handler failed", error);
+      }
+    });
 
     // WebRTC signaling: the server only relays offers, answers and ICE candidates
     // between the two participants of a call. Audio and video never pass through it.
