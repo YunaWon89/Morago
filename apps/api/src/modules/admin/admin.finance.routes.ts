@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { HttpError } from "../../lib/http-error.js";
 import { prisma } from "../../lib/prisma.js";
+import { emitToUser } from "../../realtime/io.js";
 import { listAllCalls } from "../calls/calls.service.js";
 import {
   idParamSchema,
@@ -81,4 +82,83 @@ adminFinanceRouter.get("/users/:id/transactions", async (req, res) => {
 adminFinanceRouter.get("/calls", async (req, res) => {
   const query = callsQuery.parse(req.query);
   res.json(await listAllCalls(query));
+});
+
+adminFinanceRouter.get("/topups", async (req, res) => {
+  const { page, limit } = pageQuery.parse(req.query);
+  const { status } = z
+    .object({ status: z.enum(["PENDING", "COMPLETED", "FAILED"]).optional() })
+    .parse(req.query);
+
+  const where = { type: "TOPUP" as const, ...(status ? { status } : {}) };
+  const [total, rows] = await prisma.$transaction([
+    prisma.transaction.count({ where }),
+    prisma.transaction.findMany({
+      where,
+      orderBy: { id: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
+      include: { wallet: { include: { user: { select: { id: true, fullName: true, phone: true } } } } },
+    }),
+  ]);
+
+  res.json({
+    items: rows.map((row) => ({
+      id: row.id,
+      userId: row.wallet.user.id,
+      userName: row.wallet.user.fullName,
+      phone: row.wallet.user.phone,
+      amount: Number(row.amount),
+      senderName: row.providerRef,
+      status: row.status,
+      createdAt: row.createdAt,
+    })),
+    page,
+    limit,
+    total,
+    totalPages: Math.ceil(total / limit),
+  });
+});
+
+// COMPLETED adds the money to the balance, FAILED just closes the request.
+adminFinanceRouter.patch("/topups/:id", async (req, res) => {
+  const { id } = idParamSchema.parse(req.params);
+  const { status } = z.object({ status: z.enum(["COMPLETED", "FAILED"]) }).parse(req.body ?? {});
+
+  const existing = await prisma.transaction.findFirst({
+    where: { id, type: "TOPUP" },
+    include: { wallet: true },
+  });
+  if (!existing) {
+    throw new HttpError(404, "Top-up request not found");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const claimed = await tx.transaction.updateMany({
+      where: { id, type: "TOPUP", status: "PENDING" },
+      data: { status },
+    });
+    if (claimed.count === 0) {
+      throw new HttpError(409, "The request has already been processed");
+    }
+    if (status === "COMPLETED") {
+      await tx.wallet.update({
+        where: { id: existing.walletId },
+        data: { balance: { increment: existing.amount } },
+      });
+    }
+    await tx.notification.create({
+      data: {
+        userId: existing.wallet.userId,
+        type: "SYSTEM",
+        payload: { event: "TOPUP_STATUS_CHANGED", topupId: id, status },
+      },
+    });
+  });
+
+  emitToUser(existing.wallet.userId, "notification:new", {
+    type: "SYSTEM",
+    payload: { event: "TOPUP_STATUS_CHANGED", topupId: id, status },
+  });
+  res.json({ topup: { id, status } });
 });

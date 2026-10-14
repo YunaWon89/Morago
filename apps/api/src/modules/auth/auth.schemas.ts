@@ -39,3 +39,12 @@ export const resetPasswordSchema = z.object({
   token: z.string().min(32).max(128),
   password,
 });
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: password,
+});
+
+export const updateProfileSchema = z.object({
+  fullName: z.string().trim().min(2).max(150),
+});

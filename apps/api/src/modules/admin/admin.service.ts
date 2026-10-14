@@ -1,6 +1,7 @@
 import type { Prisma } from "../../../generated/prisma/client.js";
 import { HttpError } from "../../lib/http-error.js";
 import { prisma } from "../../lib/prisma.js";
+import { emitToUser } from "../../realtime/io.js";
 
 const userListSelect = {
   id: true,
@@ -203,6 +204,11 @@ export async function setVerificationStatus(
       },
     }),
   ]);
+
+  emitToUser(id, "notification:new", {
+    type: "SYSTEM",
+    payload: { event: "VERIFICATION_STATUS_CHANGED", status },
+  });
 
   return { id, verificationStatus: status };
 }
