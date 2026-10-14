@@ -69,6 +69,11 @@
       <button id="endBtn" hidden>End call</button>
     </div>
     <div id="callResult" class="muted"></div>
+    <div id="rateBox" class="row" hidden>
+      <select id="ratingSelect"><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select>
+      <input id="ratingComment" placeholder="comment (optional)">
+      <button id="rateBtn">Rate the call</button>
+    </div>
     <div class="row">
       <video id="localVideo" autoplay playsinline muted></video>
       <video id="remoteVideo" autoplay playsinline></video>
@@ -224,6 +229,7 @@ function onCallUpdated(dto) {
       ? `Finished: ${dto.durationSec} s, cost ${dto.totalCost} KRW`
       : `Call ${dto.status.toLowerCase()}`;
     refreshBalance().catch(() => {});
+    $("rateBox").hidden = !(me.role === "USER" && dto.status === "ENDED" && dto.durationSec > 0 && !dto.review);
   }
 }
 
@@ -246,8 +252,14 @@ function renderCall() {
     }, 500);
   }
   if (!open && timerId) { clearInterval(timerId); timerId = null; $("callTimer").textContent = ""; }
-  if (open) { $("callResult").textContent = ""; loadChatForCall().catch(() => {}); }
+  if (open) { $("callResult").textContent = ""; $("rateBox").hidden = true; loadChatForCall().catch(() => {}); }
 }
+
+$("rateBtn").onclick = () => run(async () => {
+  await api("POST", `/calls/${call.id}/review`, { rating: Number($("ratingSelect").value), comment: $("ratingComment").value || undefined });
+  $("rateBox").hidden = true;
+  log("thanks, the call has been rated");
+});
 
 // ---------- WebRTC ----------
 function sendSignal(type, data) {
