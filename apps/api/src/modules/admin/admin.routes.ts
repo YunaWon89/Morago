@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
+import { adminFinanceRouter } from "./admin.finance.routes.js";
 import {
   blockUserSchema,
   chargeSchema,
@@ -21,6 +22,7 @@ import {
 export const adminRouter = Router();
 
 adminRouter.use(requireAuth, requireRole("ADMIN"));
+adminRouter.use(adminFinanceRouter);
 
 adminRouter.get("/users", async (req, res) => {
   const query = listUsersQuerySchema.parse(req.query);
