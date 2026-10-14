@@ -8,7 +8,9 @@ import { adminRouter } from "./modules/admin/admin.routes.js";
 import { callsRouter } from "./modules/calls/calls.routes.js";
 import { conversationsRouter } from "./modules/conversations/conversations.routes.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
+import { payoutsRouter } from "./modules/payouts/payouts.routes.js";
 import { referenceRouter } from "./modules/reference/reference.routes.js";
+import { reviewsRouter } from "./modules/reviews/reviews.routes.js";
 import { translatorsRouter } from "./modules/translators/translators.routes.js";
 import { walletRouter } from "./modules/wallet/wallet.routes.js";
 
@@ -34,6 +36,8 @@ if (!config.isProduction) {
 app.use("/api/auth", authRouter);
 app.use("/api", referenceRouter);
 app.use("/api/translators", translatorsRouter);
+app.use("/api", reviewsRouter);
+app.use("/api/payouts", payoutsRouter);
 app.use("/api/calls", callsRouter);
 app.use("/api/conversations", conversationsRouter);
 app.use("/api/wallet", walletRouter);
