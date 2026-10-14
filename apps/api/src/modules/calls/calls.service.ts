@@ -20,6 +20,7 @@ const callInclude = {
   },
   language: { select: { id: true, code: true, name: true } },
   theme: { select: { id: true, name: true, nameKo: true } },
+  review: { select: { rating: true, comment: true } },
 } satisfies Prisma.CallInclude;
 
 type CallRow = Prisma.CallGetPayload<{ include: typeof callInclude }>;
@@ -43,6 +44,7 @@ function toCallDto(call: CallRow) {
     },
     language: call.language,
     theme: call.theme,
+    review: call.review,
   };
 }
 
@@ -363,4 +365,38 @@ export async function endCall(callId: number, user: AuthUser) {
   });
 
   return reload(callId);
+}
+
+// All calls for the admin panel; can be narrowed down to one user.
+export async function listAllCalls(query: {
+  status?: CallRow["status"];
+  userId?: number;
+  page: number;
+  limit: number;
+}) {
+  const where: Prisma.CallWhereInput = {
+    ...(query.status ? { status: query.status } : {}),
+    ...(query.userId
+      ? { OR: [{ clientId: query.userId }, { translatorId: query.userId }] }
+      : {}),
+  };
+
+  const [total, rows] = await prisma.$transaction([
+    prisma.call.count({ where }),
+    prisma.call.findMany({
+      where,
+      include: callInclude,
+      orderBy: { id: "desc" },
+      skip: (query.page - 1) * query.limit,
+      take: query.limit,
+    }),
+  ]);
+
+  return {
+    items: rows.map(toCallDto),
+    page: query.page,
+    limit: query.limit,
+    total,
+    totalPages: Math.ceil(total / query.limit),
+  };
 }
