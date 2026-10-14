@@ -1,19 +1,23 @@
 import { Router } from "express";
 import { requireAuth } from "../../middleware/auth.js";
 import {
+  changePasswordSchema,
   forgotPasswordSchema,
   loginSchema,
   registerSchema,
   resetPasswordSchema,
   sendCodeSchema,
+  updateProfileSchema,
 } from "./auth.schemas.js";
 import {
+  changePassword,
   getCurrentUser,
   loginUser,
   registerUser,
   requestPasswordReset,
   resetPassword,
   sendRegistrationCode,
+  updateProfile,
 } from "./auth.service.js";
 
 export const authRouter = Router();
@@ -45,4 +49,14 @@ authRouter.post("/forgot-password", async (req, res) => {
 authRouter.post("/reset-password", async (req, res) => {
   const input = resetPasswordSchema.parse(req.body ?? {});
   res.json(await resetPassword(input));
+});
+
+authRouter.post("/change-password", requireAuth, async (req, res) => {
+  const input = changePasswordSchema.parse(req.body ?? {});
+  res.json(await changePassword(req.user!.id, input));
+});
+
+authRouter.patch("/profile", requireAuth, async (req, res) => {
+  const input = updateProfileSchema.parse(req.body ?? {});
+  res.json({ user: await updateProfile(req.user!.id, input) });
 });

@@ -259,3 +259,28 @@ export async function resetPassword(input: { token: string; password: string }) 
 
   return { message: "Password has been reset" };
 }
+
+export async function changePassword(
+  userId: number,
+  input: { currentPassword: string; newPassword: string },
+) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw new HttpError(404, "User not found");
+  }
+  if (!(await bcrypt.compare(input.currentPassword, user.passwordHash))) {
+    throw new HttpError(400, "Current password is incorrect");
+  }
+
+  const passwordHash = await bcrypt.hash(input.newPassword, BCRYPT_ROUNDS);
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+  return { message: "Password has been changed" };
+}
+
+export async function updateProfile(userId: number, input: { fullName: string }) {
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { fullName: input.fullName },
+  });
+  return publicUser(user);
+}

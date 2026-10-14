@@ -1,4 +1,5 @@
 import type { Prisma } from "../../../generated/prisma/client.js";
+import { config } from "../../config.js";
 import { HttpError } from "../../lib/http-error.js";
 import { prisma } from "../../lib/prisma.js";
 import { emitToUser } from "../../realtime/io.js";
@@ -42,6 +43,10 @@ export async function createPayout(
   userId: number,
   input: { amount: number; bankName: string; accountNumber: string },
 ) {
+  if (input.amount < config.payoutMinAmount) {
+    throw new HttpError(400, `The minimum withdrawal is ${config.payoutMinAmount} won`);
+  }
+
   const payout = await prisma.$transaction(async (tx) => {
     const wallet = await tx.wallet.findUniqueOrThrow({ where: { userId } });
 

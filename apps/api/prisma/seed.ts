@@ -26,6 +26,9 @@ const languages = [
   { code: "ko", name: "Корейский" },
   { code: "en", name: "Английский" },
   { code: "zh", name: "Китайский" },
+  { code: "kk", name: "Казахский" },
+  { code: "uz", name: "Узбекский" },
+  { code: "tg", name: "Таджикский" },
 ];
 
 const categories: CategorySeed[] = [

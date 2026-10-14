@@ -9,6 +9,10 @@ const envSchema = z.object({
   JWT_EXPIRES_IN_DAYS: z.coerce.number().int().positive().default(7),
   CLIENT_URL: z.string().default("http://localhost:5173"),
   PLATFORM_COMMISSION_PERCENT: z.coerce.number().min(0).max(100).default(20),
+  TOPUP_BANK_NAME: z.string().default("KEB Hana Bank"),
+  TOPUP_ACCOUNT_NUMBER: z.string().default("1234 5678 9101 1234"),
+  TOPUP_MIN_AMOUNT: z.coerce.number().int().positive().default(10000),
+  PAYOUT_MIN_AMOUNT: z.coerce.number().int().positive().default(50000),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -32,4 +36,8 @@ export const config = {
   jwtExpiresInSeconds: env.JWT_EXPIRES_IN_DAYS * 24 * 60 * 60,
   clientUrl: env.CLIENT_URL,
   commissionPercent: env.PLATFORM_COMMISSION_PERCENT,
+  topupBankName: env.TOPUP_BANK_NAME,
+  topupAccountNumber: env.TOPUP_ACCOUNT_NUMBER,
+  topupMinAmount: env.TOPUP_MIN_AMOUNT,
+  payoutMinAmount: env.PAYOUT_MIN_AMOUNT,
 };
