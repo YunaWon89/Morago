@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MORAGO call test</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 16px auto; padding: 0 12px; color: #1a1a1a; }
+  h1 { font-size: 20px; }
+  section { border: 1px solid #ccc; border-radius: 8px; padding: 12px; margin: 12px 0; }
+  input, select, button { font-size: 14px; padding: 6px 8px; margin: 2px; }
+  button { cursor: pointer; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  video { width: 320px; height: 180px; background: #222; border-radius: 6px; }
+  #messages { height: 160px; overflow-y: auto; border: 1px solid #ddd; padding: 6px; margin-bottom: 6px; font-size: 14px; }
+  .mine { color: #0b5; } .theirs { color: #05b; }
+  #log { height: 140px; overflow-y: auto; background: #f6f6f6; padding: 6px; font-size: 12px; white-space: pre-wrap; }
+  .banner { background: #fff4cc; padding: 8px; border-radius: 6px; }
+  .muted { color: #666; font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>MORAGO call test <span class="muted">(development only)</span></h1>
+
+<section id="loginBox">
+  <div class="row">
+    <input id="phone" placeholder="phone" value="01012345678">
+    <input id="password" type="password" placeholder="password">
+    <button id="loginBtn">Log in</button>
+  </div>
+  <div class="muted">Open this page in two tabs: one for a client, one for a translator. Use headphones, or both microphones will cause an echo.</div>
+</section>
+
+<section id="appBox" hidden>
+  <div class="row">
+    <span>Logged in as <b id="who"></b> (<span id="role"></span>)</span>
+    <span>Balance: <b id="balance">-</b> KRW</span>
+    <button id="logoutBtn">Log out</button>
+  </div>
+
+  <div id="translatorBox" hidden class="row">
+    <button id="onlineBtn">Go online</button>
+    <span id="onlineState" class="muted"></span>
+  </div>
+
+  <div id="clientBox" hidden>
+    <div class="row">
+      <select id="translatorSelect"></select>
+      <select id="languageSelect"></select>
+      <select id="themeSelect"></select>
+      <select id="typeSelect"><option>AUDIO</option><option>VIDEO</option></select>
+      <button id="refreshBtn">Refresh list</button>
+      <button id="callBtn">Call</button>
+    </div>
+    <div class="muted">Only online, approved translators are listed.</div>
+  </div>
+
+  <div id="incomingBox" class="banner" hidden>
+    Incoming call from <b id="callerName"></b>
+    <button id="acceptBtn">Accept</button>
+    <button id="rejectBtn">Reject</button>
+  </div>
+
+  <section id="callBox" hidden>
+    <div class="row">
+      <b>Call <span id="callId"></span>:</b> <span id="callStatus"></span>
+      <span id="callTimer"></span>
+      <button id="cancelBtn" hidden>Cancel</button>
+      <button id="endBtn" hidden>End call</button>
+    </div>
+    <div id="callResult" class="muted"></div>
+    <div class="row">
+      <video id="localVideo" autoplay playsinline muted></video>
+      <video id="remoteVideo" autoplay playsinline></video>
+    </div>
+  </section>
+
+  <section>
+    <div class="row">
+      <select id="chatSelect"></select>
+      <button id="openChatBtn" hidden>Open chat with selected translator</button>
+    </div>
+    <div id="messages"></div>
+    <div class="row">
+      <input id="msgInput" placeholder="message" style="flex:1">
+      <button id="sendBtn">Send</button>
+    </div>
+  </section>
+
+  <div id="log"></div>
+</section>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+let token = sessionStorage.getItem("token");
+let me = null, socket = null;
+let call = null, pc = null, localStream = null, peerPromise = null;
+let pendingIce = [], startedSent = false, timerId = null, signalQueue = Promise.resolve();
+let convId = null, translators = [];
+
+function log(text) {
+  const el = $("log");
+  el.textContent += `[${new Date().toLocaleTimeString()}] ${text}\n`;
+  el.scrollTop = el.scrollHeight;
+}
+
+async function api(method, path, body) {
+  const res = await fetch("/api" + path, {
+    method,
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error?.message || "HTTP " + res.status);
+  return data;
+}
+
+async function run(fn) {
+  try { await fn(); } catch (e) { log("ERROR: " + e.message); alert(e.message); }
+}
+
+// ---------- login ----------
+$("loginBtn").onclick = () => run(async () => {
+  const data = await api("POST", "/auth/login", { login: $("phone").value, password: $("password").value });
+  token = data.token;
+  sessionStorage.setItem("token", token);
+  await init();
+});
+$("logoutBtn").onclick = () => { sessionStorage.removeItem("token"); location.reload(); };
+
+async function init() {
+  me = (await api("GET", "/auth/me")).user;
+  $("loginBox").hidden = true;
+  $("appBox").hidden = false;
+  $("who").textContent = me.fullName;
+  $("role").textContent = me.role;
+  $("translatorBox").hidden = me.role !== "TRANSLATOR";
+  $("clientBox").hidden = me.role !== "USER";
+  $("openChatBtn").hidden = me.role !== "USER";
+  if (me.role === "TRANSLATOR") showOnline(me.translatorProfile?.isOnline);
+
+  socket = io({ auth: { token } });
+  socket.on("connect", () => log("socket connected"));
+  socket.on("connect_error", (e) => log("socket error: " + e.message));
+  socket.on("call:incoming", (dto) => { log("incoming call " + dto.id); call = dto; renderCall(); });
+  socket.on("call:updated", (dto) => onCallUpdated(dto));
+  socket.on("message:new", (m) => onMessage(m));
+  socket.on("webrtc:signal", (msg) => { signalQueue = signalQueue.then(() => handleSignal(msg)).catch((e) => log("signal error: " + e.message)); });
+
+  await refreshBalance();
+  if (me.role === "USER") await loadTranslators();
+  await loadConversations();
+}
+
+async function refreshBalance() {
+  $("balance").textContent = (await api("GET", "/wallet")).balance;
+}
+
+// ---------- translator ----------
+function showOnline(on) {
+  $("onlineState").textContent = on ? "you are ONLINE" : "you are offline";
+  $("onlineBtn").textContent = on ? "Go offline" : "Go online";
+  $("onlineBtn").dataset.on = on ? "1" : "";
+}
+$("onlineBtn").onclick = () => run(async () => {
+  const want = !$("onlineBtn").dataset.on;
+  const res = await api("PUT", "/translators/me/online", { isOnline: want });
+  showOnline(res.profile.isOnline);
+});
+$("acceptBtn").onclick = () => run(async () => { await api("POST", `/calls/${call.id}/accept`); });
+$("rejectBtn").onclick = () => run(async () => { await api("POST", `/calls/${call.id}/reject`); });
+
+// ---------- client ----------
+async function loadTranslators() {
+  translators = (await api("GET", "/translators?online=true&limit=50")).items;
+  const sel = $("translatorSelect");
+  sel.innerHTML = "";
+  translators.forEach((t) => sel.add(new Option(`${t.fullName} (${t.pricePerMinute} KRW/min)`, t.id)));
+  fillTranslatorOptions();
+}
+function fillTranslatorOptions() {
+  const t = translators.find((x) => String(x.id) === $("translatorSelect").value);
+  $("languageSelect").innerHTML = "";
+  $("themeSelect").innerHTML = "";
+  (t?.languages ?? []).forEach((l) => $("languageSelect").add(new Option(l.name, l.id)));
+  (t?.themes ?? []).forEach((th) => $("themeSelect").add(new Option(th.name, th.id)));
+}
+$("translatorSelect").onchange = fillTranslatorOptions;
+$("refreshBtn").onclick = () => run(loadTranslators);
+$("callBtn").onclick = () => run(async () => {
+  const res = await api("POST", "/calls", {
+    translatorId: Number($("translatorSelect").value),
+    languageId: Number($("languageSelect").value),
+    themeId: Number($("themeSelect").value),
+    type: $("typeSelect").value,
+  });
+  call = res.call;
+  renderCall();
+});
+$("cancelBtn").onclick = () => run(async () => { await api("POST", `/calls/${call.id}/cancel`); });
+$("endBtn").onclick = () => run(async () => { await api("POST", `/calls/${call.id}/end`); });
+
+// ---------- call state ----------
+const TERMINAL = ["ENDED", "MISSED", "REJECTED", "FAILED"];
+
+function onCallUpdated(dto) {
+  log(`call ${dto.id}: ${dto.status}`);
+  if (!call || call.id !== dto.id) {
+    if (TERMINAL.includes(dto.status)) return;
+    call = dto;
+  } else {
+    call = dto;
+  }
+  renderCall();
+
+  if (dto.status === "ACCEPTED") {
+    if (me.role === "USER") run(beginOffer);
+    else run(ensurePeer);
+  }
+  if (TERMINAL.includes(dto.status)) {
+    cleanupMedia();
+    $("callResult").textContent = dto.status === "ENDED"
+      ? `Finished: ${dto.durationSec} s, cost ${dto.totalCost} KRW`
+      : `Call ${dto.status.toLowerCase()}`;
+    refreshBalance().catch(() => {});
+  }
+}
+
+function renderCall() {
+  const open = call && !TERMINAL.includes(call.status);
+  $("callBox").hidden = !call;
+  if (!call) return;
+  $("callId").textContent = call.id;
+  $("callStatus").textContent = call.status;
+  const waitingForMe = open && me.role === "TRANSLATOR" && call.status === "REQUESTED";
+  $("incomingBox").hidden = !waitingForMe;
+  $("callerName").textContent = call.client.fullName;
+  $("cancelBtn").hidden = !(open && me.role === "USER" && call.status === "REQUESTED");
+  $("endBtn").hidden = !(open && ["ACCEPTED", "ACTIVE"].includes(call.status));
+  if (call.status === "ACTIVE" && !timerId) {
+    const started = new Date(call.startedAt).getTime();
+    timerId = setInterval(() => {
+      const sec = Math.floor((Date.now() - started) / 1000);
+      $("callTimer").textContent = `${sec} s, about ${Math.round((call.pricePerMinute * sec) / 60)} KRW`;
+    }, 500);
+  }
+  if (!open && timerId) { clearInterval(timerId); timerId = null; $("callTimer").textContent = ""; }
+  if (open) { $("callResult").textContent = ""; loadChatForCall().catch(() => {}); }
+}
+
+// ---------- WebRTC ----------
+function sendSignal(type, data) {
+  socket.emit("webrtc:signal", { callId: call.id, type, data }, (res) => {
+    if (!res?.ok) log(`signal ${type} failed: ${res?.error}`);
+  });
+}
+
+function ensurePeer() {
+  if (!peerPromise) {
+    peerPromise = (async () => {
+      pendingIce = [];
+      pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+      pc.onicecandidate = (e) => { if (e.candidate) sendSignal("ice", e.candidate.toJSON()); };
+      pc.ontrack = (e) => { $("remoteVideo").srcObject = e.streams[0]; };
+      pc.onconnectionstatechange = () => {
+        log("connection: " + pc.connectionState);
+        if (pc.connectionState === "connected") onConnected();
+      };
+      localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: call.type === "VIDEO" });
+      $("localVideo").srcObject = localStream;
+      localStream.getTracks().forEach((t) => pc.addTrack(t, localStream));
+    })();
+  }
+  return peerPromise;
+}
+
+async function beginOffer() {
+  await ensurePeer();
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  sendSignal("offer", pc.localDescription.toJSON());
+}
+
+async function handleSignal(msg) {
+  if (!call || msg.callId !== call.id) return;
+  await ensurePeer();
+  if (msg.type === "offer") {
+    await pc.setRemoteDescription(msg.data);
+    await flushIce();
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    sendSignal("answer", pc.localDescription.toJSON());
+  } else if (msg.type === "answer") {
+    await pc.setRemoteDescription(msg.data);
+    await flushIce();
+  } else if (msg.type === "ice") {
+    if (pc.remoteDescription) await pc.addIceCandidate(msg.data);
+    else pendingIce.push(msg.data);
+  }
+}
+
+async function flushIce() {
+  for (const c of pendingIce) await pc.addIceCandidate(c);
+  pendingIce = [];
+}
+
+// Billing starts when the audio/video connection is really established.
+function onConnected() {
+  if (me.role === "USER" && !startedSent && call?.status === "ACCEPTED") {
+    startedSent = true;
+    run(async () => { await api("POST", `/calls/${call.id}/start`); });
+  }
+}
+
+function cleanupMedia() {
+  if (pc) { pc.close(); pc = null; }
+  if (localStream) { localStream.getTracks().forEach((t) => t.stop()); localStream = null; }
+  $("localVideo").srcObject = null;
+  $("remoteVideo").srcObject = null;
+  peerPromise = null;
+  pendingIce = [];
+  startedSent = false;
+}
+
+// ---------- chat ----------
+async function loadConversations(selectId) {
+  const items = (await api("GET", "/conversations")).items;
+  const sel = $("chatSelect");
+  sel.innerHTML = "";
+  items.forEach((c) => sel.add(new Option(`${c.other.fullName}${c.unreadCount ? ` (${c.unreadCount} new)` : ""}`, c.id)));
+  if (selectId) sel.value = String(selectId);
+  if (sel.value) await openConversation(Number(sel.value));
+}
+async function openConversation(id) {
+  convId = id;
+  $("messages").innerHTML = "";
+  const list = (await api("GET", `/conversations/${id}/messages?limit=50`)).items;
+  list.forEach(addMessage);
+  await api("POST", `/conversations/${id}/read`).catch(() => {});
+}
+function addMessage(m) {
+  const div = document.createElement("div");
+  div.className = m.senderId === me.id ? "mine" : "theirs";
+  div.textContent = `${m.senderId === me.id ? "me" : "them"}${m.callId ? " [call " + m.callId + "]" : ""}: ${m.text}`;
+  $("messages").appendChild(div);
+  $("messages").scrollTop = $("messages").scrollHeight;
+}
+function onMessage(m) {
+  if (m.conversationId === convId) {
+    addMessage(m);
+    if (m.senderId !== me.id) api("POST", `/conversations/${convId}/read`).catch(() => {});
+  } else {
+    loadConversations(convId).catch(() => {});
+  }
+}
+async function loadChatForCall() {
+  const other = me.role === "USER" ? call.translator.id : call.client.id;
+  const items = (await api("GET", "/conversations")).items;
+  const conv = items.find((c) => c.other.id === other);
+  if (conv && conv.id !== convId) await loadConversations(conv.id);
+}
+$("chatSelect").onchange = () => run(() => openConversation(Number($("chatSelect").value)));
+$("openChatBtn").onclick = () => run(async () => {
+  const id = Number($("translatorSelect").value);
+  const conv = (await api("POST", "/conversations", { translatorId: id })).conversation;
+  await loadConversations(conv.id);
+});
+$("sendBtn").onclick = () => run(async () => {
+  const text = $("msgInput").value.trim();
+  if (!text || !convId) return;
+  const body = { text };
+  if (call && call.status === "ACTIVE") body.callId = call.id;
+  await api("POST", `/conversations/${convId}/messages`, body);
+  $("msgInput").value = "";
+});
+$("msgInput").onkeydown = (e) => { if (e.key === "Enter") $("sendBtn").click(); };
+
+if (token) run(init);
+</script>
+</body>
+</html>

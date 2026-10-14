@@ -1,6 +1,8 @@
+import { fileURLToPath } from "node:url";
 import express from "express";
 import cors from "cors";
 import type { HealthResponse } from "@morago/contracts";
+import { config } from "./config.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 import { adminRouter } from "./modules/admin/admin.routes.js";
 import { callsRouter } from "./modules/calls/calls.routes.js";
@@ -23,6 +25,11 @@ app.get("/health", (_req, res) => {
   const body: HealthResponse = { status: "ok" };
   res.json(body);
 });
+
+// A page for trying calls and chat in two browser tabs. Never served in production.
+if (!config.isProduction) {
+  app.use("/test", express.static(fileURLToPath(new URL("../public", import.meta.url))));
+}
 
 app.use("/api/auth", authRouter);
 app.use("/api", referenceRouter);
