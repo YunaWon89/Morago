@@ -42,6 +42,7 @@ interface CallApi {
   remoteStream: MediaStream | null;
   muted: boolean;
   cameraOff: boolean;
+  speaker: boolean;
   mediaError: string | null;
   startCall: (input: StartCallInput) => Promise<void>;
   accept: () => Promise<void>;
@@ -52,6 +53,7 @@ interface CallApi {
   dismiss: () => void;
   toggleMute: () => void;
   toggleCamera: () => void;
+  toggleSpeaker: () => void;
 }
 
 const CallContext = createContext<CallApi | null>(null);
@@ -67,6 +69,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [muted, setMuted] = useState(false);
   const [cameraOff, setCameraOff] = useState(false);
+  const [speaker, setSpeaker] = useState(true);
   const [mediaError, setMediaError] = useState<string | null>(null);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
@@ -97,6 +100,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     setRemoteStream(null);
     setMuted(false);
     setCameraOff(false);
+    setSpeaker(true);
   }, []);
 
   const sendSignal = useCallback(
@@ -169,7 +173,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const beginOffer = useCallback(async () => {
     await ensurePeer();
     const pc = pcRef.current;
-    if (!pc) return;
+    if (!pc || pc.signalingState !== "stable") return;
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
     sendSignal("offer", pc.localDescription?.toJSON());
@@ -191,12 +195,14 @@ export function CallProvider({ children }: { children: ReactNode }) {
       if (!pc) return;
 
       if (message.type === "offer") {
+        if (pc.signalingState !== "stable") return; // duplicate offer, ignore
         await pc.setRemoteDescription(message.data as RTCSessionDescriptionInit);
         await flushIce();
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
         sendSignal("answer", pc.localDescription?.toJSON());
       } else if (message.type === "answer") {
+        if (pc.signalingState !== "have-local-offer") return; // duplicate answer, ignore
         await pc.setRemoteDescription(message.data as RTCSessionDescriptionInit);
         await flushIce();
       } else if (pc.remoteDescription) {
@@ -307,6 +313,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
     setMuted(next);
   }, [muted]);
 
+  const toggleSpeaker = useCallback(() => setSpeaker((value) => !value), []);
+
   const toggleCamera = useCallback(() => {
     const next = !cameraOff;
     localRef.current?.getVideoTracks().forEach((track) => (track.enabled = !next));
@@ -321,6 +329,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       remoteStream,
       muted,
       cameraOff,
+      speaker,
       mediaError,
       startCall,
       accept: () => act("accept"),
@@ -331,6 +340,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       dismiss,
       toggleMute,
       toggleCamera,
+      toggleSpeaker,
     }),
     [
       call,
@@ -339,6 +349,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       remoteStream,
       muted,
       cameraOff,
+      speaker,
       mediaError,
       startCall,
       act,
@@ -346,6 +357,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       dismiss,
       toggleMute,
       toggleCamera,
+      toggleSpeaker,
     ],
   );
 

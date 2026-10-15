@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
@@ -21,8 +22,24 @@ export function ShellLayout() {
 
 // ---------- login, registration, password recovery ----------
 
-export function AuthShell({ children }: { children: ReactNode }) {
-  return <div className="phone">{children}</div>;
+export function AuthShell({
+  children,
+  tagline,
+  variant = "client",
+}: {
+  children: ReactNode;
+  tagline?: string;
+  variant?: "client" | "translator";
+}) {
+  return (
+    <div className={variant === "translator" ? "phone theme-orange" : "phone"}>
+      <div className="auth-hero">
+        <span className="logo">morago</span>
+        <p>{tagline ?? "Live translators for your life in Korea"}</p>
+      </div>
+      <div className="auth-sheet">{children}</div>
+    </div>
+  );
 }
 
 function TabBar() {
@@ -108,7 +125,7 @@ export function TopBar({ title, backTo }: { title: string; backTo?: string }) {
   return (
     <div className="topbar">
       <button
-        className="icon-btn light"
+        className="back-circle"
         onClick={() => (backTo ? navigate(backTo) : navigate(-1))}
         aria-label="Back"
       >
@@ -120,13 +137,36 @@ export function TopBar({ title, backTo }: { title: string; backTo?: string }) {
 }
 
 export function Sheet({ onClose, children }: { onClose: () => void; children: ReactNode }) {
-  return (
+  return createPortal(
     <div className="overlay-bg" onClick={onClose}>
       <div className="sheet" onClick={(event) => event.stopPropagation()}>
         <div className="grabber" />
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
+  );
+}
+
+// Picture used on the "request sent" sheets: a phone with a wallet and a check mark.
+export function SuccessArt() {
+  return (
+    <svg className="success-art" viewBox="0 0 190 150" aria-hidden="true">
+      <defs>
+        <linearGradient id="sa" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#3b4252" />
+          <stop offset="1" stopColor="#3b4252" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d="M40 150V22a14 14 0 0 1 14-14h92" fill="none" stroke="url(#sa)" strokeWidth="5" strokeLinecap="round" />
+      <path d="M150 150V40" fill="none" stroke="url(#sa)" strokeWidth="5" strokeLinecap="round" />
+      <rect x="62" y="52" width="66" height="46" rx="14" fill="#f1f3f6" />
+      <circle cx="95" cy="70" r="13" fill="#e3e7ec" />
+      <rect x="74" y="88" width="42" height="7" rx="3.5" fill="#e3e7ec" />
+      <circle cx="152" cy="26" r="20" fill="#fff" />
+      <circle cx="152" cy="26" r="13" fill="#3b4252" />
+      <path d="M146 26l4.5 4.5L158 22" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 

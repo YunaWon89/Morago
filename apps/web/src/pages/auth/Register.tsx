@@ -3,7 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import { Field } from "../../components/Field";
 import { Icon } from "../../components/Icon";
-import { AuthShell } from "../../components/Layout";
+import { AuthShell, SuccessArt } from "../../components/Layout";
+import { Otp } from "../../components/Otp";
 import { api, errorMessage } from "../../lib/api";
 
 type Step = "form" | "code" | "done";
@@ -80,12 +81,10 @@ export function Register() {
 
   if (step === "done") {
     return (
-      <AuthShell>
-        <div className="auth-page" style={{ textAlign: "center", paddingTop: 120 }}>
+      <AuthShell variant={role === "TRANSLATOR" ? "translator" : "client"}>
+        <div className="auth-page" style={{ textAlign: "center" }}>
           <div className="success">
-            <div className="check">
-              <Icon name="check" size={30} />
-            </div>
+            <SuccessArt />
             <h2>Registration was successful</h2>
             <p className="subtle">
               {role === "TRANSLATOR"
@@ -107,12 +106,12 @@ export function Register() {
 
   if (step === "code") {
     return (
-      <AuthShell>
+      <AuthShell variant={role === "TRANSLATOR" ? "translator" : "client"}>
         <form className="auth-page" onSubmit={confirm}>
-          <button type="button" className="icon-btn light" onClick={() => setStep("form")} aria-label="Back">
+          <button type="button" className="back-circle" onClick={() => setStep("form")} aria-label="Back">
             <Icon name="back" size={18} />
           </button>
-          <h1 style={{ marginTop: 24, fontSize: 22 }}>Verification code</h1>
+          <h1 style={{ marginTop: 22, fontSize: 24 }}>Verification code</h1>
           <p className="subtle">We have sent a verification code to your phone number {cleanPhone}.</p>
           {devCode && (
             <div className="alert info">
@@ -120,15 +119,7 @@ export function Register() {
             </div>
           )}
           {error && <div className="alert error">{error}</div>}
-          <input
-            className="code-input"
-            inputMode="numeric"
-            maxLength={6}
-            placeholder="------"
-            value={code}
-            onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
-            autoFocus
-          />
+          <Otp value={code} onChange={setCode} />
           <p className="subtle" style={{ textAlign: "center", margin: "14px 0" }}>
             {cooldown > 0 ? `Send again in ${cooldown} s` : ""}
           </p>
@@ -150,8 +141,8 @@ export function Register() {
   }
 
   return (
-    <AuthShell>
-      <form className="auth-page" onSubmit={getCode} style={{ paddingTop: 36 }}>
+    <AuthShell variant={role === "TRANSLATOR" ? "translator" : "client"}>
+      <form className="auth-page" onSubmit={getCode}>
         <h1>{role === "TRANSLATOR" ? "Translator Registration" : "User Registration"}</h1>
         <p className="subtle">Register to access all the benefits of the app.</p>
 
@@ -171,7 +162,7 @@ export function Register() {
         {error && <div className="alert error">{error}</div>}
 
         <Field label="Full name" icon="user" placeholder="Last name First name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-        <Field label="Phone number" icon="phone" placeholder="Enter your phone number without dashes" value={phone} onChange={(e) => setPhone(e.target.value)} error={errors.phone} inputMode="tel" />
+        <Field label="Phone number" icon="phone" placeholder="Phone number, digits only" value={phone} onChange={(e) => setPhone(e.target.value)} error={errors.phone} inputMode="tel" />
         <Field label="Email (for password recovery)" icon="message" placeholder="name@example.com" value={email} onChange={(e) => setEmail(e.target.value)} error={errors.email} type="email" />
         <Field label="Password" icon="lock" type="password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} error={errors.password} />
         <Field label="Repeat password" icon="lock" type="password" placeholder="Repeat again" value={repeat} onChange={(e) => setRepeat(e.target.value)} error={errors.repeat} />

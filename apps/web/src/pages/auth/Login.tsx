@@ -30,18 +30,15 @@ export function Login() {
   }
 
   return (
-    <AuthShell>
+    <AuthShell tagline="Log in to call a translator in a few taps">
       <form className="auth-page" onSubmit={submit}>
-        <div className="logo" style={{ color: "var(--teal)", marginBottom: 30 }}>
-          morago
-        </div>
         <h1>Log in</h1>
         <p className="subtle">Log in to take advantage of all the app's features. Translators and admins use the same form.</p>
 
         <Field
           label="Phone number or email"
           icon="phone"
-          placeholder="Enter your phone number without dashes"
+          placeholder="Phone number, digits only"
           value={phone}
           onChange={(event) => setPhone(event.target.value)}
           error={error ? " " : null}
