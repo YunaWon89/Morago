@@ -1,0 +1,73 @@
+import { useState, type FormEvent } from "react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
+import { useAuth } from "../../auth/AuthContext";
+import { AuthShell } from "../../components/Layout";
+import { Field } from "../../components/Field";
+import { ApiError, errorMessage } from "../../lib/api";
+
+export function Login() {
+  const { user, login } = useAuth();
+  const navigate = useNavigate();
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  if (user) return <Navigate to="/" replace />;
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await login(phone.trim(), password);
+      navigate("/");
+    } catch (e) {
+      setError(e instanceof ApiError && e.status === 401 ? "Invalid number or password" : errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <AuthShell>
+      <form className="auth-page" onSubmit={submit}>
+        <div className="logo" style={{ color: "var(--teal)", marginBottom: 30 }}>
+          morago
+        </div>
+        <h1>Log in</h1>
+        <p className="subtle">Log in to take advantage of all the app's features. Translators and admins use the same form.</p>
+
+        <Field
+          label="Phone number or email"
+          icon="phone"
+          placeholder="Enter your phone number without dashes"
+          value={phone}
+          onChange={(event) => setPhone(event.target.value)}
+          error={error ? " " : null}
+          autoComplete="username"
+        />
+        <Field
+          label="Password"
+          icon="lock"
+          type="password"
+          placeholder="Enter your password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          error={error}
+          autoComplete="current-password"
+        />
+
+        <button className="btn" type="submit" disabled={busy || !phone || !password} style={{ marginTop: 8 }}>
+          {busy ? "Please wait..." : "Log in"}
+        </button>
+        <Link to="/register" className="btn secondary">
+          Register
+        </Link>
+        <Link to="/forgot-password" className="link">
+          Forgot password
+        </Link>
+      </form>
+    </AuthShell>
+  );
+}
