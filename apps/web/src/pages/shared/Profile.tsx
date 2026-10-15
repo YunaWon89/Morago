@@ -23,22 +23,27 @@ export function Profile() {
 
   return (
     <div className="screen">
-      <header className="header" style={{ paddingBottom: 22 }}>
-        <h1 style={{ fontSize: 22, marginBottom: 16 }}>My Profile</h1>
-        <div className="row" style={{ justifyContent: "flex-start", gap: 12 }}>
-          <Avatar name={user.fullName} size={52} />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700 }}>{user.fullName}</div>
-            <div style={{ opacity: 0.8, fontSize: 13 }}>{user.phone}</div>
+      <header className="header" style={{ paddingBottom: 26, paddingTop: 34 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 22 }}>My Profile</h1>
+        <div className="row" style={{ justifyContent: "flex-start", gap: 14 }}>
+          <div style={{ borderRadius: "50%", border: "2px solid rgba(255,255,255,0.8)", display: "inline-flex" }}>
+            <Avatar name={user.fullName} size={56} />
           </div>
-          <Link to="/profile/edit" className="chip" style={{ background: "rgba(255,255,255,0.18)", color: "#fff" }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 800, fontSize: 16 }}>{user.fullName}</div>
+            <div style={{ opacity: 0.85, fontSize: 13, marginTop: 2 }}>{user.phone}</div>
+          </div>
+          <Link
+            to="/profile/edit"
+            style={{ background: "rgba(255,255,255,0.2)", color: "#fff", borderRadius: 999, padding: "9px 28px", fontSize: 13, fontWeight: 600 }}
+          >
             Edit
           </Link>
         </div>
       </header>
 
       <div className="body">
-        <h2 className="section-title" style={{ marginTop: 4 }}>
+        <h2 className="section-title" style={{ marginTop: 6 }}>
           Settings
         </h2>
         {isTranslator && (
@@ -62,7 +67,7 @@ export function Profile() {
         <h2 className="section-title">About the App</h2>
         {Object.keys(INFO).map((title) => (
           <button key={title} className="menu-item" onClick={() => setInfo(title)}>
-            <Icon name="info" size={18} />
+            <Icon name={title === "FAQ" ? "help" : title === "Privacy Policy" ? "shield" : "users"} size={18} />
             <span className="grow">{title}</span>
             <Icon name="chevron" size={16} />
           </button>

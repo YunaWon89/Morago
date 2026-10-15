@@ -3,7 +3,11 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./auth/AuthContext";
 import { CallOverlay } from "./call/CallOverlay";
 import { Loading, ShellLayout } from "./components/Layout";
-import { AdminPlaceholder } from "./pages/admin/Placeholder";
+import { AdminLayout, AdminLogin } from "./pages/admin/AdminLayout";
+import { AdminCalls, AdminCategories, AdminThemes } from "./pages/admin/AdminLists";
+import { AdminPayoutDetails, AdminPayouts, AdminTopups, AdminWithdrawHistory } from "./pages/admin/AdminMoney";
+import { AdminTranslators } from "./pages/admin/AdminTranslators";
+import { AdminCallHistory, AdminCharge, AdminDepositHistory, AdminUsers } from "./pages/admin/AdminUsers";
 import { ForgotPassword, ResetPassword } from "./pages/auth/Recovery";
 import { Login } from "./pages/auth/Login";
 import { Register } from "./pages/auth/Register";
@@ -27,7 +31,7 @@ function RequireAuth({ children }: { children: ReactNode }) {
 function Home() {
   const { user } = useAuth();
   if (user?.role === "TRANSLATOR") return <TranslatorHome />;
-  if (user?.role === "ADMIN") return <AdminPlaceholder />;
+  if (user?.role === "ADMIN") return <Navigate to="/admin" replace />;
   return <ClientHome />;
 }
 
@@ -41,6 +45,24 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="/admin/users" replace />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="users/:id/charge" element={<AdminCharge />} />
+          <Route path="users/:id/calls" element={<AdminCallHistory kind="user" />} />
+          <Route path="users/:id/deposits" element={<AdminDepositHistory />} />
+          <Route path="translators" element={<AdminTranslators />} />
+          <Route path="translators/:id/calls" element={<AdminCallHistory kind="translator" />} />
+          <Route path="translators/:id/withdrawals" element={<AdminWithdrawHistory />} />
+          <Route path="calls" element={<AdminCalls />} />
+          <Route path="topups" element={<AdminTopups />} />
+          <Route path="payouts" element={<AdminPayouts />} />
+          <Route path="payouts/:id" element={<AdminPayoutDetails />} />
+          <Route path="themes" element={<AdminThemes />} />
+          <Route path="categories" element={<AdminCategories />} />
+        </Route>
 
         <Route
           element={

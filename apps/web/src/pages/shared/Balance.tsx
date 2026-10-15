@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import { Icon } from "../../components/Icon";
-import { BrandHeader, Sheet, TopBar } from "../../components/Layout";
+import { BrandHeader, Sheet, SuccessArt, TopBar } from "../../components/Layout";
 import { useCall } from "../../call/CallContext";
 import { api, errorMessage } from "../../lib/api";
 import { formatDate, formatWon } from "../../lib/format";
@@ -71,11 +71,17 @@ export function Balance() {
         {wallet && wallet.transactions.items.length === 0 && <div className="empty">No operations yet</div>}
         {wallet?.transactions.items.map((tx) => (
           <div key={tx.id} className="list-item">
+            <span
+              className="coin"
+              style={{ width: 38, height: 38, fontSize: 16, background: tx.amount < 0 ? "#eef1f5" : "#e5f6da", color: tx.amount < 0 ? "#6b7585" : "#2e8a00", boxShadow: "none" }}
+            >
+              {tx.amount < 0 ? "\u2193" : "\u2191"}
+            </span>
             <div className="grow">
               <div className="name">{describe(tx)}</div>
               <div className="sub">{formatDate(tx.createdAt)}</div>
             </div>
-            <div style={{ fontWeight: 700, color: tx.amount < 0 ? "var(--ink)" : "var(--green)" }}>
+            <div style={{ fontWeight: 800, color: tx.amount < 0 ? "var(--ink)" : "var(--green)" }}>
               {tx.amount > 0 ? "+" : ""}
               {formatWon(tx.amount)}
             </div>
@@ -174,9 +180,7 @@ export function TopUp() {
       {done && (
         <Sheet onClose={() => navigate("/balance")}>
           <div className="success">
-            <div className="check">
-              <Icon name="check" size={30} />
-            </div>
+            <SuccessArt />
             <h2>Top-up request completed successfully</h2>
             <p className="subtle">Funds will be credited to your balance within one working day.</p>
             <button className="btn" style={{ marginTop: 20 }} onClick={() => navigate("/balance")}>
@@ -300,9 +304,7 @@ export function Withdraw() {
       {done && (
         <Sheet onClose={() => navigate("/balance")}>
           <div className="success">
-            <div className="check">
-              <Icon name="check" size={30} />
-            </div>
+            <SuccessArt />
             <h2>Withdrawal of funds succeeded</h2>
             <p className="subtle">The funds will be credited to your account within one working day.</p>
             <button className="btn orange" style={{ marginTop: 20 }} onClick={() => navigate("/balance")}>

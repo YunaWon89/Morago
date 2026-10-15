@@ -115,8 +115,10 @@ export function Translators() {
               <div className="name">
                 <span className={translator.isOnline ? "status-dot on" : "status-dot off"} />
                 {translator.fullName}
-                <Stars value={translator.ratingAvg} />
-                <span className="subtle">({translator.reviewsCount})</span>
+              </div>
+              <div className="sub" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Stars value={translator.ratingAvg} size={12} />
+                <span>({translator.reviewsCount})</span>
               </div>
               <div className="sub">{translator.languages.map((l) => l.name).join(", ")}</div>
             </div>
