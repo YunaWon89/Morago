@@ -62,17 +62,20 @@ export function Topics() {
           return (
             <div key={category.id} style={{ marginBottom: 14 }}>
               <button
-                className="row"
-                style={{ width: "100%", padding: "6px 0", fontWeight: 700, fontSize: 14 }}
+                className="list-item"
+                style={{ marginBottom: 0, fontWeight: 700, fontSize: 14, justifyContent: "space-between" }}
                 onClick={() => setOpen(expanded && query === "" ? null : category.id)}
               >
-                <span>
-                  {categoryEmoji(category.name)} {category.name}
+                <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span className="emoji" style={{ width: 40, height: 40, borderRadius: 13, background: "var(--teal-soft)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
+                    {categoryEmoji(category.name)}
+                  </span>
+                  {category.name}
                 </span>
-                <span className="subtle">{expanded ? "\u25B2" : "\u25BC"}</span>
+                <span className="subtle" style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform .2s" }}>{"\u25BC"}</span>
               </button>
               {expanded && (
-                <div className="grid" style={{ marginTop: 8 }}>
+                <div className="grid" style={{ marginTop: 12 }}>
                   {category.themes.map((theme) => (
                     <button
                       key={theme.id}

@@ -7,6 +7,13 @@ import { errorMessage } from "../lib/api";
 import { formatClock, formatDuration, formatWon } from "../lib/format";
 import { useCall } from "./CallContext";
 
+const REMINDERS = [
+  "Introduce yourself",
+  "Speak politely and clearly",
+  "Ask what the person needs help with",
+  "Do not end the call before the topic is solved",
+];
+
 function useNow(active: boolean): number {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -22,8 +29,11 @@ function useNow(active: boolean): number {
 // still attached because browsers only deliver remote WebRTC sound when the stream is
 // connected to a media element. Playback is resumed on every tap in case the browser
 // keeps the audio context suspended until the page has been touched.
-function RemoteAudio({ stream }: { stream: MediaStream | null }) {
+// "Speaker" off plays the voice quietly, like an earpiece.
+function RemoteAudio({ stream, speaker }: { stream: MediaStream | null; speaker: boolean }) {
   const ref = useRef<HTMLAudioElement>(null);
+  const gainRef = useRef<GainNode | null>(null);
+
   useEffect(() => {
     const el = ref.current;
     if (!el || !stream) return;
@@ -35,7 +45,10 @@ function RemoteAudio({ stream }: { stream: MediaStream | null }) {
       window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     const context = new AudioCtx();
     const source = context.createMediaStreamSource(stream);
-    source.connect(context.destination);
+    const gain = context.createGain();
+    gainRef.current = gain;
+    source.connect(gain);
+    gain.connect(context.destination);
 
     const resume = () => {
       if (context.state !== "running") void context.resume().catch(() => undefined);
@@ -48,10 +61,16 @@ function RemoteAudio({ stream }: { stream: MediaStream | null }) {
       window.clearInterval(timer);
       window.removeEventListener("pointerdown", resume);
       window.removeEventListener("keydown", resume);
+      gainRef.current = null;
       source.disconnect();
       void context.close().catch(() => undefined);
     };
   }, [stream]);
+
+  useEffect(() => {
+    if (gainRef.current) gainRef.current.gain.value = speaker ? 1 : 0.3;
+  }, [speaker, stream]);
+
   return <audio ref={ref} muted playsInline />;
 }
 
@@ -109,30 +128,53 @@ export function CallOverlay() {
   if (call.status === "REQUESTED" && !isClient) {
     return (
       <div className="call-screen">
-        <div className="call-inner dark">
-          <span className="logo">morago</span>
-          <div className="call-kind pulse">Incoming {isVideo ? "video" : "audio"} call</div>
-          <div className="call-center">
-            <div className="avatar-rings">
-              <Avatar name={call.client.fullName} size={132} />
-            </div>
-            <div className="name" style={{ marginTop: 18 }}>{call.client.fullName}</div>
-            <div className="call-meta">
-              <span>{call.theme.name}</span>
-              <span>{call.language.name}</span>
-              <span>{formatWon(call.pricePerMinute)} / min</span>
-            </div>
-            {error && <div className="alert error">{error}</div>}
+        <div className="incoming-sheet">
+          <div className="incoming-head">
+            <span className="logo">morago</span>
           </div>
-          <div className="answer-row">
-            <button className="round-action" disabled={busy} onClick={() => run(c.reject)}>
-              <span className="big-circle red"><Icon name="hangup" size={30} /></span>
-              Decline
-            </button>
-            <button className="round-action" disabled={busy} onClick={() => run(c.accept)}>
-              <span className="big-circle green"><Icon name="phone" size={30} /></span>
-              Accept
-            </button>
+          <div className="incoming-card">
+            <div className="grabber" />
+            <div className="incoming-body">
+              <h3 className="pulse">Incoming {isVideo ? "Video " : ""}Call</h3>
+              <p className="subtle" style={{ marginTop: 2 }}>
+                Subject: {call.theme.name}
+              </p>
+              <div
+                className="list-item"
+                style={{ marginTop: 14, marginBottom: 0, boxShadow: "none", border: 0, borderTop: "1px solid var(--line)", borderRadius: 0, paddingLeft: 0, paddingRight: 0 }}
+              >
+                <Avatar name={call.client.fullName} size={46} square />
+                <div className="grow">
+                  <div className="name">{call.client.fullName}</div>
+                  <div className="sub">Language: {call.language.name}</div>
+                </div>
+              </div>
+              <div className="stat-row" style={{ justifyContent: "flex-start", gap: 56, textAlign: "left", margin: "0 0 18px", borderTop: 0 }}>
+                <div>
+                  <b>{formatWon(call.pricePerMinute)}</b>
+                  <small>1 minute</small>
+                </div>
+                <div>
+                  <b>{isVideo ? "Video" : "Audio"}</b>
+                  <small>Call type</small>
+                </div>
+              </div>
+              <h3 style={{ color: "var(--ink)", fontSize: 15 }}>Reminder</h3>
+              <ol className="reminder">
+                {REMINDERS.map((text) => (
+                  <li key={text}>{text}</li>
+                ))}
+              </ol>
+            </div>
+            <div className="incoming-actions">
+              {error && <div className="alert error">{error}</div>}
+              <button className="btn green" disabled={busy} onClick={() => run(c.accept)}>
+                Accept Call
+              </button>
+              <button className="btn secondary" disabled={busy} onClick={() => run(c.reject)}>
+                Decline
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -228,11 +270,12 @@ export function CallOverlay() {
   const connecting = call.status === "ACCEPTED";
 
   const showVideo = isVideo && !!c.remoteStream;
+  const status = calling ? "Calling..." : connecting ? "Connecting..." : formatClock(seconds);
 
   return (
     <div className="call-screen">
       <div className={`call-inner ${theme} ${showVideo ? "with-video" : ""}`}>
-        <RemoteAudio stream={c.remoteStream} />
+        <RemoteAudio stream={c.remoteStream} speaker={c.speaker} />
         <video ref={remoteRef} autoPlay playsInline muted className={showVideo ? "remote-video" : "media-hidden"} />
         {isVideo && c.localStream && !c.cameraOff && (
           <video ref={localRef} autoPlay playsInline muted className="local-video" />
@@ -244,20 +287,16 @@ export function CallOverlay() {
 
         {!showVideo && (
           <div className="call-center">
-            <div className={calling || connecting ? "avatar-rings" : ""}>
-              <Avatar name={other.fullName} size={150} />
-            </div>
-            <div className="name" style={{ marginTop: 22 }}>{other.fullName}</div>
-            <div className={calling || connecting ? "timer pulse" : "timer"}>
-              {calling && "Calling..."}
-              {connecting && "Connecting..."}
-              {ticking && formatClock(seconds)}
-            </div>
+            <div className="name">{other.fullName}</div>
+            <div className={calling || connecting ? "timer pulse" : "timer"}>{status}</div>
             {ticking && isClient && (
               <div className="call-meta">
                 <span>about {formatWon(Math.round((call.pricePerMinute * seconds) / 60))}</span>
               </div>
             )}
+            <div className={calling || connecting ? "avatar-rings" : ""} style={{ marginTop: 34 }}>
+              <Avatar name={other.fullName} size={210} square />
+            </div>
           </div>
         )}
 
@@ -265,7 +304,7 @@ export function CallOverlay() {
           <div className="video-caption">
             <div className="name">{other.fullName}</div>
             <div className="timer">
-              {ticking ? formatClock(seconds) : "Connecting..."}
+              {status}
               {ticking && isClient && ` · about ${formatWon(Math.round((call.pricePerMinute * seconds) / 60))}`}
             </div>
           </div>
@@ -274,24 +313,28 @@ export function CallOverlay() {
         {(error || c.mediaError) && <div className="alert error call-alert">{error || c.mediaError}</div>}
 
         <div className="call-bottom">
-          {!calling && (
-            <div className="call-actions">
-              <button className="round-action" onClick={c.toggleMute}>
-                <span className={c.muted ? "circle filled" : "circle"}>
-                  <Icon name={c.muted ? "micOff" : "mic"} />
+          <div className="call-actions" style={{ visibility: calling ? "hidden" : "visible" }}>
+            <button className="round-action" onClick={c.toggleMute}>
+              <span className={c.muted ? "circle filled" : "circle"}>
+                <Icon name="micOff" size={26} />
+              </span>
+              Mute
+            </button>
+            {isVideo && (
+              <button className="round-action" onClick={c.toggleCamera}>
+                <span className={c.cameraOff ? "circle filled" : "circle"}>
+                  <Icon name={c.cameraOff ? "cameraOff" : "camera"} size={26} />
                 </span>
-                {c.muted ? "Unmute" : "Mute"}
+                Camera
               </button>
-              {isVideo && (
-                <button className="round-action" onClick={c.toggleCamera}>
-                  <span className={c.cameraOff ? "circle filled" : "circle"}>
-                    <Icon name={c.cameraOff ? "cameraOff" : "camera"} />
-                  </span>
-                  Camera
-                </button>
-              )}
-            </div>
-          )}
+            )}
+            <button className="round-action" onClick={c.toggleSpeaker}>
+              <span className={c.speaker ? "circle filled" : "circle"}>
+                <Icon name="speaker" size={26} />
+              </span>
+              Speaker
+            </button>
+          </div>
           <button
             className="hangup"
             disabled={busy}

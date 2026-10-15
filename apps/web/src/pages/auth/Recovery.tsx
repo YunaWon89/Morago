@@ -1,8 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Field } from "../../components/Field";
-import { Icon } from "../../components/Icon";
-import { AuthShell } from "../../components/Layout";
+import { AuthShell, SuccessArt } from "../../components/Layout";
 import { api, errorMessage } from "../../lib/api";
 
 export function ForgotPassword() {
@@ -82,11 +81,9 @@ export function ResetPassword() {
   if (done) {
     return (
       <AuthShell>
-        <div className="auth-page" style={{ textAlign: "center", paddingTop: 120 }}>
+        <div className="auth-page" style={{ textAlign: "center" }}>
           <div className="success">
-            <div className="check">
-              <Icon name="check" size={30} />
-            </div>
+            <SuccessArt />
             <h2>Password has been reset</h2>
             <p className="subtle">You can now log in with your new password</p>
           </div>
