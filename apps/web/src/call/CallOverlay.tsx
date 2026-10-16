@@ -143,7 +143,7 @@ export function CallOverlay() {
                 className="list-item"
                 style={{ marginTop: 14, marginBottom: 0, boxShadow: "none", border: 0, borderTop: "1px solid var(--line)", borderRadius: 0, paddingLeft: 0, paddingRight: 0 }}
               >
-                <Avatar name={call.client.fullName} size={46} square />
+                <Avatar fileId={call.client.avatarFileId} name={call.client.fullName} size={46} square />
                 <div className="grow">
                   <div className="name">{call.client.fullName}</div>
                   <div className="sub">Language: {call.language.name}</div>
@@ -191,7 +191,7 @@ export function CallOverlay() {
         <div className={`call-inner ${theme}`}>
           <span className="logo">morago</span>
           <div className="call-center">
-            <Avatar name={other.fullName} size={96} square />
+            <Avatar fileId={other.avatarFileId} name={other.fullName} size={96} square />
             <div className="name" style={{ marginTop: 0 }}>
               {isClient ? "to. " : ""}
               {other.fullName}
@@ -295,7 +295,7 @@ export function CallOverlay() {
               </div>
             )}
             <div className={calling || connecting ? "avatar-rings" : ""} style={{ marginTop: 34 }}>
-              <Avatar name={other.fullName} size={210} square />
+              <Avatar fileId={other.avatarFileId} name={other.fullName} size={210} square />
             </div>
           </div>
         )}

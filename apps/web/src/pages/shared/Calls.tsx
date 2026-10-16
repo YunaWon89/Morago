@@ -70,7 +70,7 @@ export function Calls() {
           const ok = call.status === "ENDED" && (call.durationSec ?? 0) > 0;
           return (
             <button key={call.id} className="list-item" onClick={() => open(call)} style={{ cursor: isClient ? "pointer" : "default" }}>
-              <Avatar name={other.fullName} size={48} square />
+              <Avatar fileId={other.avatarFileId} name={other.fullName} size={48} square />
               <div className="grow">
                 <div className="name">
                   {other.fullName}
@@ -100,7 +100,7 @@ export function Calls() {
             {contact.call.theme.name}
           </p>
           <div className="list-item" style={{ marginTop: 14, marginBottom: 0, boxShadow: "none", border: 0, borderTop: "1px solid var(--line)", borderRadius: 0, paddingLeft: 0, paddingRight: 0 }}>
-            <Avatar name={contact.call.translator.fullName} size={44} square />
+            <Avatar fileId={contact.call.translator.avatarFileId} name={contact.call.translator.fullName} size={44} square />
             <div className="grow">
               <Stars value={contact.translator?.ratingAvg ?? 0} size={15} />{" "}
               <span className="subtle">{contact.translator ? contact.translator.ratingAvg.toFixed(1) : ""}</span>

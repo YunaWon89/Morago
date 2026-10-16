@@ -3,6 +3,10 @@ import express from "express";
 import cors from "cors";
 import type { HealthResponse } from "@morago/contracts";
 import { config } from "./config.js";
+import { requestLogger } from "./middleware/request-logger.js";
+import { swaggerRouter } from "./docs/swagger.js";
+import { accountRouter } from "./modules/auth/account.routes.js";
+import { filesRouter, uploadsDir } from "./modules/files/files.routes.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 import { adminRouter } from "./modules/admin/admin.routes.js";
 import { callsRouter } from "./modules/calls/calls.routes.js";
@@ -18,6 +22,7 @@ import { walletRouter } from "./modules/wallet/wallet.routes.js";
 export const app = express();
 
 app.use(cors());
+app.use(requestLogger);
 app.use(express.json());
 
 app.get("/", (_req, res) => {
@@ -34,6 +39,10 @@ if (!config.isProduction) {
   app.use("/test", express.static(fileURLToPath(new URL("../public", import.meta.url))));
 }
 
+app.use("/uploads", express.static(uploadsDir));
+app.use("/api/docs", swaggerRouter);
+app.use("/api/files", filesRouter);
+app.use("/api/auth", accountRouter);
 app.use("/api/auth", authRouter);
 app.use("/api", referenceRouter);
 app.use("/api/translators", translatorsRouter);

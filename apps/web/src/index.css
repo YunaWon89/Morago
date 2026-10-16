@@ -511,3 +511,13 @@ h1, h2, h3, p { margin: 0; }
 .ob-actions .btn + .btn { margin-top: 0; }
 .btn.light { background: #f5f7f9; color: var(--ink); box-shadow: none; }
 .ob-link { text-align: center; color: rgba(255, 255, 255, 0.85); font-size: 13px; margin-top: 8px; }
+
+/* ---------- avatars with a real photo ---------- */
+.avatar-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.avatar-picker { position: relative; display: inline-flex; }
+.camera-badge {
+  position: absolute; right: -8px; bottom: -6px; width: 34px; height: 34px; border-radius: 50%;
+  background: var(--ink); color: #fff; display: inline-flex; align-items: center; justify-content: center;
+  border: 3px solid #fff; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+.camera-badge:disabled { opacity: 0.6; }

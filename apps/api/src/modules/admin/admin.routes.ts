@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
+import { adminCatalogRouter } from "./admin.catalog.routes.js";
 import { adminFinanceRouter } from "./admin.finance.routes.js";
 import {
   blockUserSchema,
@@ -23,6 +24,7 @@ export const adminRouter = Router();
 
 adminRouter.use(requireAuth, requireRole("ADMIN"));
 adminRouter.use(adminFinanceRouter);
+adminRouter.use(adminCatalogRouter);
 
 adminRouter.get("/users", async (req, res) => {
   const query = listUsersQuerySchema.parse(req.query);

@@ -36,10 +36,12 @@ interface PageHeadProps {
   filter?: { value: string; onChange: (value: string) => void; options: { value: string; label: string }[]; placeholder: string };
   actions?: { value: string; label: string }[];
   onApply?: (action: string) => void;
+  addLabel?: string;
+  onAdd?: () => void;
 }
 
 // Title, breadcrumbs, search and the "Filter / Choose action / Apply" row from the mockups.
-export function PageHead({ title, crumbs, search, onSearch, filter, actions, onApply }: PageHeadProps) {
+export function PageHead({ title, crumbs, search, onSearch, filter, actions, onApply, addLabel, onAdd }: PageHeadProps) {
   const [text, setText] = useState(search ?? "");
   const [action, setAction] = useState("");
 
@@ -56,8 +58,13 @@ export function PageHead({ title, crumbs, search, onSearch, filter, actions, onA
         <h1>{title}</h1>
         <Crumbs items={crumbs} />
       </div>
-      {(onSearch || filter || actions) && (
+      {(onSearch || filter || actions || onAdd) && (
         <div className="adm-tools">
+          {onAdd && (
+            <button className="adm-apply" onClick={onAdd}>
+              + {addLabel ?? "Add"}
+            </button>
+          )}
           {onSearch && (
             <label className="adm-search">
               <Icon name="search" size={15} />
