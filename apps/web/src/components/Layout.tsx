@@ -26,11 +26,20 @@ export function AuthShell({
   children,
   tagline,
   variant = "client",
+  plain = false,
 }: {
   children: ReactNode;
   tagline?: string;
   variant?: "client" | "translator";
+  plain?: boolean;
 }) {
+  if (plain) {
+    return (
+      <div className={variant === "translator" ? "phone theme-orange" : "phone"}>
+        <div className="auth-plain">{children}</div>
+      </div>
+    );
+  }
   return (
     <div className={variant === "translator" ? "phone theme-orange" : "phone"}>
       <div className="auth-hero">
