@@ -68,6 +68,7 @@ enum PayoutStatus {
 enum VerificationPurpose {
   REGISTRATION
   LOGIN
+  PASSWORD_RESET
 }
 
 enum NotificationType {

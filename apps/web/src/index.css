@@ -4,22 +4,22 @@
    Admin: desktop layout with sidebar (classes start with "adm-").
    ===================================================================== */
 :root {
-  --teal: #00596f;
+  --teal: #016076;
   --teal-2: #0b7a96;
-  --teal-dark: #003f4d;
+  --teal-dark: #013947;
   --teal-soft: #e6f2f5;
   --yellow: #f5f81a;
-  --orange: #ec9610;
+  --orange: #eb9411;
   --orange-dark: #d98200;
-  --green: #38b000;
+  --green: #3db80a;
   --red: #d7263d;
-  --hangup: #ff5a3c;
-  --ink: #161d2e;
+  --hangup: #ff5a38;
+  --ink: #171c2f;
   --muted: #98a1b0;
   --line: #edf0f3;
   --bg: #ffffff;
   --surface: #f4f6f8;
-  --dark: #1e262e;
+  --dark: #1d2730;
   --dark-2: #2a343d;
   --primary: var(--teal);
   --header: var(--teal);
@@ -28,13 +28,14 @@
   --shadow-lg: 0 12px 32px rgba(22, 29, 46, 0.16);
 
   /* Diagonal glass shards that decorate headers and call screens. */
-  --facets: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' preserveAspectRatio='none'><polygon points='0,90 400,0 400,120 0,235' fill='white' fill-opacity='.055'/><polygon points='0,235 400,120 400,300 0,300' fill='black' fill-opacity='.09'/><polygon points='140,0 400,0 400,80' fill='white' fill-opacity='.07'/><polygon points='0,0 0,150 210,0' fill='black' fill-opacity='.07'/><polygon points='260,300 400,170 400,300' fill='white' fill-opacity='.05'/></svg>");
+  --facets: url("/img/bg-teal.jpg");
+  --facets-dark: url("/img/bg-dark.jpg");
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; padding: 0; }
 body {
-  font-family: "Manrope", "Avenir Next", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  font-family: "Nunito Sans", "Avenir Next", "Avenir", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
   color: var(--ink);
   background: radial-gradient(1200px 700px at 20% -10%, #cfe3e8 0%, #e5ecef 45%, #dfe6ea 100%);
   -webkit-font-smoothing: antialiased;
@@ -63,6 +64,7 @@ h1, h2, h3, p { margin: 0; }
   --header: var(--dark);
 }
 .phone.theme-orange { --header: var(--teal); }
+.phone.theme-dark { --facets: var(--facets-dark); }
 .screen { flex: 1; display: flex; flex-direction: column; padding-bottom: 84px; animation: rise 0.3s ease both; }
 .screen.no-tabs { padding-bottom: 28px; }
 .body { padding: 18px 20px; }
@@ -72,13 +74,13 @@ h1, h2, h3, p { margin: 0; }
 .header {
   background-color: var(--header);
   background-image: var(--facets);
-  background-size: 100% 100%;
+  background-size: cover; background-position: center;
   color: #fff;
   padding: 20px 20px 22px;
   position: relative;
 }
 .header-row { display: flex; align-items: center; justify-content: space-between; min-height: 38px; }
-.logo { font-size: 27px; font-weight: 800; letter-spacing: -1px; color: #fff; line-height: 1; }
+.logo { display: inline-block; width: 104px; height: 32px; font-size: 0; color: transparent; background: url("/img/logo-white.png") center / contain no-repeat; }
 .icon-btn {
   width: 38px; height: 38px; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
@@ -159,9 +161,8 @@ h1, h2, h3, p { margin: 0; }
 .balance-card .label { font-size: 11px; color: var(--muted); font-weight: 600; }
 .balance-card .amount { font-size: 24px; font-weight: 800; display: flex; align-items: center; gap: 9px; margin-top: 2px; letter-spacing: -0.5px; }
 .coin {
-  width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(145deg, #ffd23f, #f0a500); color: #fff;
-  display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex: none;
-  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.08);
+  width: 24px; height: 24px; border-radius: 50%; background: url("/img/coin.png") center / contain no-repeat; font-size: 0; color: transparent;
+  display: inline-flex; align-items: center; justify-content: center; flex: none; vertical-align: middle;
 }
 .plus-btn {
   display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--ink);
@@ -169,10 +170,11 @@ h1, h2, h3, p { margin: 0; }
 .plus-btn span.sq { background: var(--ink); color: #fff; width: 26px; height: 26px; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; }
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .tile {
-  background: #fff; border-radius: 18px; padding: 14px 6px 12px; text-align: center;
+  background: #fff; border-radius: 20px; padding: 12px 6px 12px; text-align: center;
   font-size: 12px; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 8px;
   border: 1px solid var(--line); min-height: 96px; justify-content: center; box-shadow: var(--shadow);
 }
+.tile .topic-ico { width: 52px; height: 52px; object-fit: contain; border-radius: 14px; }
 .tile .emoji {
   font-size: 24px; line-height: 1; width: 48px; height: 48px; border-radius: 16px; background: var(--teal-soft);
   display: inline-flex; align-items: center; justify-content: center;
@@ -243,14 +245,14 @@ h1, h2, h3, p { margin: 0; }
 .stat-row small { color: var(--muted); font-size: 11px; }
 .success { text-align: center; padding: 8px 0 4px; }
 .success h2 { margin: 6px 0 8px; font-size: 19px; line-height: 1.3; }
-.success-art { width: 190px; height: 150px; margin: 0 auto; display: block; }
+.success-art { width: 190px; height: 190px; object-fit: contain; margin: 0 auto; display: block; }
 
 /* ---------- auth pages ---------- */
 .auth-hero {
-  background-color: var(--header); background-image: var(--facets); background-size: 100% 100%;
+  background-color: var(--header); background-image: var(--facets); background-size: cover; background-position: center;
   color: #fff; padding: 38px 26px 64px; position: relative;
 }
-.auth-hero .logo { font-size: 34px; }
+.auth-hero .logo { width: 136px; height: 42px; }
 .auth-hero p { margin-top: 10px; font-size: 14px; opacity: 0.82; line-height: 1.5; max-width: 280px; }
 .auth-sheet {
   flex: 1; background: #fff; border-radius: 28px 28px 0 0; margin-top: -28px; padding: 28px 24px 28px; position: relative;
@@ -271,7 +273,7 @@ h1, h2, h3, p { margin: 0; }
 }
 .otp input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(0, 89, 111, 0.08); }
 .bank-card {
-  background-color: var(--teal); background-image: var(--facets); background-size: 100% 100%;
+  background-color: var(--teal); background-image: var(--facets); background-size: cover; background-position: center;
   color: #fff; border-radius: 18px; padding: 24px 20px; margin-bottom: 18px;
   box-shadow: 0 12px 26px rgba(0, 89, 111, 0.28);
 }
@@ -299,15 +301,24 @@ h1, h2, h3, p { margin: 0; }
 .check-box.on { background: var(--orange); border-color: var(--orange); }
 
 /* ---------- chat ---------- */
-.chat-body { flex: 1; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; background: #f4f6f8; }
-.bubble { max-width: 78%; padding: 10px 14px; border-radius: 18px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
-.bubble.mine { align-self: flex-end; background: var(--primary); color: #fff; border-bottom-right-radius: 5px; }
-.bubble.theirs { align-self: flex-start; background: #fff; border-bottom-left-radius: 5px; box-shadow: var(--shadow); }
-.bubble small { display: block; opacity: 0.6; font-size: 10px; margin-top: 3px; text-align: right; }
-.chat-input { display: flex; gap: 8px; padding: 10px 14px 18px; background: #fff; border-top: 1px solid var(--line); }
-.chat-input input { flex: 1; border: 1.5px solid var(--line); border-radius: 999px; padding: 12px 18px; outline: 0; }
-.chat-input input:focus { border-color: var(--primary); }
-.chat-input button { width: 46px; height: 46px; border-radius: 50%; background: var(--primary); color: #fff; display: inline-flex; align-items: center; justify-content: center; }
+.chat-page { background: #fff; }
+.chat-head { display: flex; align-items: center; gap: 12px; padding: 54px 18px 12px; background: #fff; }
+.chat-back { width: 30px; height: 40px; display: inline-flex; align-items: center; justify-content: flex-start; color: var(--ink); }
+.chat-avatar { position: relative; display: inline-flex; }
+.chat-avatar .online { position: absolute; right: -1px; top: -1px; width: 12px; height: 12px; border-radius: 50%; background: #2fc23a; border: 2px solid #fff; }
+.chat-title { display: flex; flex-direction: column; line-height: 1.25; }
+.chat-title b { font-size: 16px; font-weight: 700; }
+.chat-title span { font-size: 13px; color: var(--muted); }
+.chat-body { flex: 1; padding: 12px 18px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; background: #fff; }
+.bubble { max-width: 78%; padding: 14px 16px; border-radius: 14px; font-size: 14px; line-height: 1.45; word-wrap: break-word; }
+.bubble.mine { align-self: flex-end; background: var(--dark); color: #fff; border-radius: 14px 14px 4px 14px; }
+.bubble.theirs { align-self: flex-start; background: #f5f5f7; color: #8d93a3; border-radius: 14px 14px 14px 4px; }
+.stamp { align-self: flex-start; color: #b3b8c4; font-size: 11px; margin: 0 4px 8px; }
+.stamp.mine { align-self: flex-end; }
+.chat-input { display: flex; align-items: center; gap: 10px; margin: 8px 16px 22px; padding: 6px 8px 6px 16px; background: #f5f6f8; border-radius: 16px; color: #aab0bd; }
+.chat-input input { flex: 1; min-width: 0; border: 0; background: transparent; padding: 12px 0; outline: 0; color: var(--ink); }
+.chat-input button { width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center; color: var(--ink); }
+.inbox .list-item { border: 0; border-bottom: 1px solid var(--line); border-radius: 0; box-shadow: none; background: transparent; padding: 14px 4px; }
 .search-yellow { display: flex; align-items: center; gap: 8px; background: var(--yellow); border-radius: 14px; padding: 0 14px; margin-top: 16px; color: var(--ink); }
 .search-yellow input { flex: 1; border: 0; background: transparent; outline: 0; padding: 14px 0; }
 
@@ -319,10 +330,10 @@ h1, h2, h3, p { margin: 0; }
 .call-inner {
   width: 100%; max-width: 430px; height: 100%; color: #fff; display: flex; flex-direction: column;
   align-items: center; padding: 30px 24px 38px; position: relative; overflow: hidden;
-  background-size: 100% 100%;
+  background-size: cover; background-position: center;
 }
 .call-inner.teal { background-color: var(--teal); background-image: var(--facets); }
-.call-inner.dark { background-color: var(--dark); background-image: var(--facets); }
+.call-inner.dark { background-color: var(--dark); background-image: var(--facets-dark); }
 .call-inner > * { position: relative; z-index: 1; }
 .call-inner > .remote-video { position: absolute; z-index: 0; }
 .call-inner > .local-video { position: absolute; z-index: 2; }
@@ -366,7 +377,7 @@ h1, h2, h3, p { margin: 0; }
 /* ---------- incoming call sheet ---------- */
 .incoming-sheet { width: 100%; max-width: 430px; background: #fff; color: var(--ink); height: 100%; display: flex; flex-direction: column; animation: fade 0.25s ease both; }
 .incoming-head {
-  background-color: var(--dark); background-image: var(--facets); background-size: 100% 100%;
+  background-color: var(--dark); background-image: var(--facets-dark); background-size: cover; background-position: center;
   color: #fff; padding: 30px 20px 74px; text-align: center;
 }
 .incoming-card {
@@ -492,14 +503,11 @@ h1, h2, h3, p { margin: 0; }
   align-items: center; justify-content: center; gap: 14px; color: #fff; z-index: 100;
   animation: fade 0.3s ease both;
 }
-.splash .logo { font-size: 24px; }
+.splash .logo { width: 120px; height: 36px; }
 .onboarding {
   position: fixed; inset: 0; max-width: 430px; margin: 0 auto; overflow: hidden; color: #fff;
-  display: flex; flex-direction: column; justify-content: flex-end; z-index: 100; transition: background 0.4s ease;
+  display: flex; flex-direction: column; justify-content: flex-end; z-index: 100; background-color: #000; background-size: cover; background-position: center top;
 }
-.ob-circle { position: absolute; border-radius: 50%; }
-.ob-circle.red { width: 96px; height: 96px; background: #d0021b; left: -48px; top: 21%; }
-.ob-circle.orange { width: 110px; height: 110px; background: var(--orange); right: -50px; top: 30%; }
 .ob-skip { position: absolute; top: 56px; right: 22px; color: rgba(255, 255, 255, 0.75); font-size: 13px; font-weight: 600; }
 .ob-content { text-align: center; padding: 0 34px 26px; animation: slide 0.35s ease both; }
 .ob-content h1 { font-size: 26px; line-height: 1.25; font-weight: 800; letter-spacing: -0.4px; }
@@ -521,3 +529,15 @@ h1, h2, h3, p { margin: 0; }
   border: 3px solid #fff; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 .camera-badge:disabled { opacity: 0.6; }
+
+/* ---------- Figma pass: details from the mockups ---------- */
+.splash { gap: 12px; background: var(--teal) url("/img/bg-teal.jpg") center / cover; }
+.splash .mark { width: 76px; height: 76px; border-radius: 20px; }
+.free-call { position: fixed; inset: 0; z-index: 70; background: rgba(1, 57, 71, 0.72); display: flex; align-items: center; justify-content: center; padding: 24px; animation: fade 0.25s ease both; }
+.free-call-card { background: #fff; border-radius: 28px; width: 100%; max-width: 340px; padding: 26px 22px 22px; text-align: center; color: var(--ink); }
+.free-call-card h2 { font-size: 24px; font-weight: 800; letter-spacing: 0.2px; }
+.free-call-card p { margin: 16px 0 6px; color: #3a4052; font-size: 15px; line-height: 1.5; }
+.free-call-card img { width: 100%; max-width: 270px; display: block; margin: 8px auto 14px; }
+.chat-day { align-self: center; background: #fde4de; color: #e0563b; border-radius: 999px; padding: 4px 14px; font-size: 12px; font-weight: 700; }
+.auth-plain .segmented { background: #f6f7f9; padding: 5px; }
+.auth-plain .segmented button.active { background: var(--orange); box-shadow: 0 8px 18px rgba(235, 148, 17, 0.28); }
