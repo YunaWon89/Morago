@@ -1,0 +1,3379 @@
+{
+  "info": {
+    "name": "MORAGO API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Run 'POST /api/auth/login' first: the token is saved to {{token}} and used by the other requests."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "POST /api/auth/send-code - Send an SMS code to a phone number (in development the code is returned as devCode)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/send-code",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "send-code"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"01012345678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/register - Register a client or a translator",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"01012345678\",\n  \"code\": \"123456\",\n  \"password\": \"secret1234\",\n  \"fullName\": \"Kim Dmitrii\",\n  \"email\": \"kim@example.com\",\n  \"role\": \"USER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/login - Log in with phone or email, returns a JWT",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"login\": \"01012345678\",\n  \"password\": \"secret1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.token) { pm.collectionVariables.set('token', data.token); }",
+                  "pm.test('login ok', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/auth/me - Current user",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /api/auth/me - Delete my account (the account is closed, call and payment history is kept)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"secret1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/auth/profile - Change my name",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Kim Dmitrii\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/change-password - Change my password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/change-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "change-password"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"old\",\n  \"newPassword\": \"newsecret123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/forgot-password - Send a password reset link by email (in development the link is written to the server l",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "forgot-password"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"kim@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/forgot-password/phone - Send a 6-digit password reset code by SMS (in development the code is returned as",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/forgot-password/phone",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "forgot-password",
+                "phone"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"01012345678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/forgot-password/verify - Check the SMS code; returns a one-time token for /reset-password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/forgot-password/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "forgot-password",
+                "verify"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"01012345678\",\n  \"code\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/auth/reset-password - Set a new password with the token from the email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "reset-password"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"…\",\n  \"password\": \"newsecret123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Reference",
+      "item": [
+        {
+          "name": "GET /api/languages - Languages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/languages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "languages"
+              ],
+              "query": [],
+              "variable": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/categories - Categories with their themes (topics)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "categories"
+              ],
+              "query": [],
+              "variable": []
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Files",
+      "item": [
+        {
+          "name": "POST /api/files - Upload an image or a PDF (max 5 MB)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/files",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "files"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/files/avatar - Upload a picture and make it my avatar",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/files/avatar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "files",
+                "avatar"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/files/{id} - Open a file (image or PDF)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/files/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "files",
+                ":id"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Translators",
+      "item": [
+        {
+          "name": "GET /api/translators - List translators (filters: languageId, themeId, online; sorting; pagination)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/translators",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "translators"
+              ],
+              "query": [
+                {
+                  "key": "languageId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "themeId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "online",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "sort",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "disabled": true
+                }
+              ],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/translators/{id} - Translator card",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/translators/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "translators",
+                ":id"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/translators/me - My translator profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/translators/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "translators",
+                "me"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/translators/me - Edit my translator profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/translators/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "translators",
+                "me"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"topikLevel\": 5,\n  \"pricePerMinute\": 1500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /api/translators/me/online - Go online or offline",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/translators/me/online",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "translators",
+                "me",
+                "online"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isOnline\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "GET /api/translators/{id}/reviews - Reviews of a translator",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/translators/:id/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "translators",
+                ":id",
+                "reviews"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "disabled": true
+                }
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/calls/{id}/review - Rate a finished call (1–5)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/calls/:id/review",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "calls",
+                ":id",
+                "review"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Great translator\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Calls",
+      "item": [
+        {
+          "name": "POST /api/calls - Request a call to a translator",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/calls",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "calls"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"translatorId\": 2,\n  \"languageId\": 1,\n  \"themeId\": 1,\n  \"type\": \"AUDIO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/calls - My call history (filter by status, pagination)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/calls",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "calls"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "disabled": true
+                }
+              ],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/calls/{id} - Call details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/calls/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "calls",
+                ":id"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/calls/{id}/accept - Translator accepts the call",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/calls/:id/accept",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "calls",
+                ":id",
+                "accept"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/calls/{id}/reject - Translator declines the call",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/calls/:id/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "calls",
+                ":id",
+                "reject"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/calls/{id}/cancel - Client cancels the call request",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/calls/:id/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "calls",
+                ":id",
+                "cancel"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/calls/{id}/start - Mark the call as started (WebRTC connected)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/calls/:id/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "calls",
+                ":id",
+                "start"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/calls/{id}/end - End the call; duration and cost are calculated",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/calls/:id/end",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "calls",
+                ":id",
+                "end"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Wallet",
+      "item": [
+        {
+          "name": "GET /api/wallet - Balance and transaction history",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/wallet",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "wallet"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "disabled": true
+                }
+              ],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/wallet/topup-info - Bank account for top-ups and the minimum amount",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/wallet/topup-info",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "topup-info"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/wallet/topups - Create a top-up request (an administrator confirms it)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/wallet/topups",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "topups"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 30000,\n  \"senderName\": \"Kim Dmitrii\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/payouts/info - Minimum withdrawal amount",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/payouts/info",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payouts",
+                "info"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/payouts - Request a withdrawal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payouts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payouts"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 50000,\n  \"bankName\": \"KEB Hana Bank\",\n  \"accountNumber\": \"123-456-789\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/payouts - My withdrawal requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/payouts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payouts"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Messages",
+      "item": [
+        {
+          "name": "GET /api/conversations - My conversations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/conversations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "conversations"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/conversations - Start a conversation with a translator",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/conversations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "conversations"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"translatorId\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/conversations/{id}/messages - Messages of a conversation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/conversations/:id/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "conversations",
+                ":id",
+                "messages"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "disabled": true
+                }
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/conversations/{id}/messages - Send a message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/conversations/:id/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "conversations",
+                ":id",
+                "messages"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Hello\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/conversations/{id}/read - Mark messages as read",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/conversations/:id/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "conversations",
+                ":id",
+                "read"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "GET /api/notifications - My notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "disabled": true
+                }
+              ],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/notifications/read-all - Mark all notifications as read",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "read-all"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "GET /api/admin/users - Users (search, filters, pagination)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "role",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "disabled": true
+                }
+              ],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/admin/users/{id} - User details with balance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                ":id"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/admin/users/{id}/block - Block an account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/:id/block",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                ":id",
+                "block"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Spam\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/admin/users/{id}/unblock - Activate an account",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/:id/unblock",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                ":id",
+                "unblock"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/admin/users/{id}/charge - Add money to a user's balance",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/:id/charge",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                ":id",
+                "charge"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 10000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/admin/users/{id}/transactions - Transactions of a user",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/users/:id/transactions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                ":id",
+                "transactions"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "disabled": true
+                }
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/admin/translators - Translators with verification status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/translators",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "translators"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "disabled": true
+                }
+              ],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/admin/translators/{id}/verification - Approve, reject or schedule an interview",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/translators/:id/verification",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "translators",
+                ":id",
+                "verification"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/admin/calls - All calls",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/calls",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "calls"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "disabled": true
+                }
+              ],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/admin/topups - Top-up requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/topups",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "topups"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "disabled": true
+                }
+              ],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/admin/topups/{id} - Confirm or reject a top-up",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/topups/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "topups",
+                ":id"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"COMPLETED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/admin/payouts - Withdrawal requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/payouts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "payouts"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "disabled": true
+                }
+              ],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/admin/payouts/{id} - Mark a withdrawal as paid or rejected",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/payouts/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "payouts",
+                ":id"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PAID\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin catalog",
+      "item": [
+        {
+          "name": "GET /api/admin/categories - All categories including hidden ones",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "categories"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/admin/categories - Create a category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "categories"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Medicine\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/admin/categories/{id} - Edit or hide a category",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/categories/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "categories",
+                ":id"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Medicine\",\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /api/admin/categories/{id} - Delete a category (hidden if it has themes)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/categories/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "categories",
+                ":id"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/admin/themes - All themes including hidden ones",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/themes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "themes"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/admin/themes - Create a theme",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/themes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "themes"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hospital\",\n  \"categoryId\": 1,\n  \"isEmergency\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /api/admin/themes/{id} - Edit or hide a theme",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/themes/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "themes",
+                ":id"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hospital\",\n  \"isActive\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /api/admin/themes/{id} - Delete a theme (hidden if it was used in calls)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/themes/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "themes",
+                ":id"
+              ],
+              "query": [],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is not 5xx', () => pm.expect(pm.response.code).to.be.below(500));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
