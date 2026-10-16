@@ -1,6 +1,8 @@
 import { fileURLToPath } from "node:url";
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import { authLimiter } from "./middleware/rate-limit.js";
 import type { HealthResponse } from "@morago/contracts";
 import { config } from "./config.js";
 import { requestLogger } from "./middleware/request-logger.js";
@@ -21,7 +23,26 @@ import { walletRouter } from "./modules/wallet/wallet.routes.js";
 
 export const app = express();
 
-app.use(cors());
+// The app runs behind a proxy (Railway, Render), so the real client address is in X-Forwarded-For.
+app.set("trust proxy", 1);
+
+// Security headers. The API only returns JSON and files, so a content policy is not needed,
+// but pictures must be allowed to load from the address of the web app.
+app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: "cross-origin" } }));
+
+// Browsers may call the API only from the web app address (CLIENT_URL).
+// In development the web app uses the Vite proxy, so any local origin is accepted.
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || !config.isProduction || config.clientOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
+  }),
+);
 app.use(requestLogger);
 app.use(express.json());
 
@@ -41,6 +62,16 @@ if (!config.isProduction) {
 
 app.use("/uploads", express.static(uploadsDir));
 app.use("/api/docs", swaggerRouter);
+app.use(
+  [
+    "/api/auth/login",
+    "/api/auth/register",
+    "/api/auth/send-code",
+    "/api/auth/forgot-password",
+    "/api/auth/reset-password",
+  ],
+  authLimiter,
+);
 app.use("/api/files", filesRouter);
 app.use("/api/auth", accountRouter);
 app.use("/api/auth", authRouter);

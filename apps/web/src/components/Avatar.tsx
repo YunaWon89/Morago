@@ -1,3 +1,5 @@
+import { apiUrl } from "../lib/config";
+
 const PALETTES: [string, string][] = [
   ["#e0394d", "#a31d2f"],
   ["#f2a73b", "#cf7a0a"],
@@ -31,7 +33,7 @@ export function Avatar({ name, size = 44, square = false, fileId }: AvatarProps)
       }}
       title={name}
     >
-      {fileId ? <img src={`/api/files/${fileId}`} alt={name} className="avatar-img" /> : null}
+      {fileId ? <img src={apiUrl(`/api/files/${fileId}`)} alt={name} className="avatar-img" /> : null}
       <svg viewBox="0 0 100 100" aria-hidden="true" style={fileId ? { display: "none" } : undefined}>
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
