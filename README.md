@@ -87,6 +87,12 @@ The web app has no settings file: Vite forwards `/api` and `/socket.io` to `http
 
 Both windows must allow the microphone (and the camera for video).
 
+## API testing
+
+- Swagger UI: <http://localhost:3000/api/docs>.
+- Postman: import `docs/MORAGO.postman_collection.json`. Run **POST /api/auth/login** first (change the phone and password in its body); the token is saved automatically and used by all other requests. The `baseUrl` variable is `http://localhost:3000`.
+- `docs/openapi.json` is the same API description as a file.
+
 ## Useful commands
 
 | Command | What it does |
