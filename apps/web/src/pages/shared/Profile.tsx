@@ -6,6 +6,7 @@ import { AvatarPicker } from "../../components/AvatarPicker";
 import { Field } from "../../components/Field";
 import { Icon } from "../../components/Icon";
 import { BrandHeader, Sheet, TopBar } from "../../components/Layout";
+import { useToast } from "../../components/Toast";
 import { api, errorMessage } from "../../lib/api";
 import { formatRelative } from "../../lib/format";
 import type { NotificationDto, Paginated } from "../../lib/types";
@@ -134,6 +135,7 @@ export function Profile() {
 export function ProfileEdit() {
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
   const [fullName, setFullName] = useState(user?.fullName ?? "");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -144,6 +146,7 @@ export function ProfileEdit() {
     try {
       await api("PATCH", "/auth/profile", { fullName: fullName.trim() });
       await refreshUser();
+      toast.success("Saved");
       navigate("/profile");
     } catch (e) {
       setError(errorMessage(e));
@@ -172,7 +175,8 @@ export function ChangePassword() {
   const [next, setNext] = useState("");
   const [repeat, setRepeat] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
+  const toast = useToast();
+  const [, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const mismatch = repeat && repeat !== next ? "Passwords do not match" : null;
@@ -183,6 +187,10 @@ export function ChangePassword() {
     try {
       await api("POST", "/auth/change-password", { currentPassword: current, newPassword: next });
       setDone(true);
+      toast.success("Password has been changed");
+      setCurrent("");
+      setNext("");
+      setRepeat("");
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -195,7 +203,6 @@ export function ChangePassword() {
       <TopBar title="Change Password" />
       <div className="body">
         {error && <div className="alert error">{error}</div>}
-        {done && <div className="alert ok">Password has been changed</div>}
         <Field label="Current Password" icon="lock" type="password" value={current} onChange={(e) => setCurrent(e.target.value)} />
         <Field label="New Password" icon="lock" type="password" placeholder="Enter New Password" value={next} onChange={(e) => setNext(e.target.value)} />
         <Field label="Repeat New Password" icon="lock" type="password" placeholder="Repeat New Password" value={repeat} onChange={(e) => setRepeat(e.target.value)} error={mismatch} />
