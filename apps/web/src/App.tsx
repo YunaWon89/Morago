@@ -10,6 +10,7 @@ import { AdminTranslators } from "./pages/admin/AdminTranslators";
 import { AdminCallHistory, AdminCharge, AdminDepositHistory, AdminUsers } from "./pages/admin/AdminUsers";
 import { ForgotPassword, ResetPassword } from "./pages/auth/Recovery";
 import { Login } from "./pages/auth/Login";
+import { Welcome, welcomeSeen } from "./pages/auth/Welcome";
 import { Register } from "./pages/auth/Register";
 import { ClientHome } from "./pages/client/Home";
 import { Topics } from "./pages/client/Topics";
@@ -24,7 +25,7 @@ import { TranslatorProfileEdit } from "./pages/translator/ProfileEdit";
 function RequireAuth({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return <Loading />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to={welcomeSeen() ? "/login" : "/welcome"} replace />;
   return <>{children}</>;
 }
 
@@ -41,6 +42,7 @@ export default function App() {
   return (
     <>
       <Routes>
+        <Route path="/welcome" element={<Welcome />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />

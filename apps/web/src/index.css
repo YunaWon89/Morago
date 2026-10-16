@@ -477,3 +477,37 @@ h1, h2, h3, p { margin: 0; }
 
 .phone input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--orange); }
 .list-item .name { min-width: 0; }
+
+/* ---------- plain (white) auth pages, as in the mockups ---------- */
+.auth-plain { padding: 64px 24px 28px; flex: 1; background: #fff; }
+.auth-plain .auth-page { padding: 0; }
+.auth-plain h1 { font-size: 30px; line-height: 1.2; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 10px; }
+.auth-plain .subtle { margin-bottom: 22px; }
+.profile-avatar { display: flex; justify-content: center; margin: 6px 0 18px; }
+.chip { border-radius: 10px; padding: 8px 14px; }
+
+/* ---------- splash and onboarding ---------- */
+.splash {
+  position: fixed; inset: 0; background: var(--teal); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px; color: #fff; z-index: 100;
+  animation: fade 0.3s ease both;
+}
+.splash .logo { font-size: 24px; }
+.onboarding {
+  position: fixed; inset: 0; max-width: 430px; margin: 0 auto; overflow: hidden; color: #fff;
+  display: flex; flex-direction: column; justify-content: flex-end; z-index: 100; transition: background 0.4s ease;
+}
+.ob-circle { position: absolute; border-radius: 50%; }
+.ob-circle.red { width: 96px; height: 96px; background: #d0021b; left: -48px; top: 21%; }
+.ob-circle.orange { width: 110px; height: 110px; background: var(--orange); right: -50px; top: 30%; }
+.ob-skip { position: absolute; top: 56px; right: 22px; color: rgba(255, 255, 255, 0.75); font-size: 13px; font-weight: 600; }
+.ob-content { text-align: center; padding: 0 34px 26px; animation: slide 0.35s ease both; }
+.ob-content h1 { font-size: 26px; line-height: 1.25; font-weight: 800; letter-spacing: -0.4px; }
+.ob-content p { margin-top: 12px; font-size: 13px; opacity: 0.75; line-height: 1.5; }
+.ob-dots { display: flex; justify-content: center; gap: 8px; margin-top: 26px; }
+.ob-dots button { width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, 0.55); padding: 0; }
+.ob-dots button.active { background: var(--teal-light, #2aa3bd); transform: scale(1.15); }
+.ob-actions { padding: 0 24px 40px; display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.ob-actions .btn + .btn { margin-top: 0; }
+.btn.light { background: #f5f7f9; color: var(--ink); box-shadow: none; }
+.ob-link { text-align: center; color: rgba(255, 255, 255, 0.85); font-size: 13px; margin-top: 8px; }
