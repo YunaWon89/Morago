@@ -68,7 +68,7 @@ export async function handleSignal(user: AuthUser, raw: unknown, maybeAck?: unkn
 
 export function initSocket(httpServer: HttpServer) {
   const io = new Server(httpServer, {
-    cors: { origin: config.isProduction ? config.clientUrl : true },
+    cors: { origin: config.isProduction ? config.clientOrigins : true },
   });
 
   // The client connects with: io(url, { auth: { token } })

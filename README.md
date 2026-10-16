@@ -68,7 +68,9 @@ If port 3000 is busy, an old API process is still running; stop it and start aga
 | `JWT_SECRET` | secret for tokens, 32+ characters | required |
 | `JWT_EXPIRES_IN_DAYS` | token lifetime | 7 |
 | `PORT` | API port | 3000 |
-| `CLIENT_URL` | address of the web app | http://localhost:5173 |
+| `CLIENT_URL` | address(es) of the web app, comma separated (CORS) | http://localhost:5173 |
+| `RATE_LIMIT_AUTH_MAX` | auth requests per IP per 15 min | 30 |
+| `VITE_API_URL` (web) | API address for production build; empty in dev (Vite proxy) | |
 | `PLATFORM_COMMISSION_PERCENT` | platform commission | 20 |
 | `TOPUP_BANK_NAME`, `TOPUP_ACCOUNT_NUMBER` | bank details shown on the top-up screen | demo values |
 | `TOPUP_MIN_AMOUNT`, `PAYOUT_MIN_AMOUNT` | minimum top-up / payout, won | 10000 / 50000 |
@@ -92,6 +94,14 @@ Both windows must allow the microphone (and the camera for video).
 - Swagger UI: <http://localhost:3000/api/docs>.
 - Postman: import `docs/MORAGO.postman_collection.json`. Run **POST /api/auth/login** first (change the phone and password in its body); the token is saved automatically and used by all other requests. The `baseUrl` variable is `http://localhost:3000`.
 - `docs/openapi.json` is the same API description as a file.
+
+## Tests, CI, Docker
+
+- `pnpm --filter api test` - unit and integration tests (15)
+- `pnpm --filter api typecheck`, `pnpm --filter web exec tsc -b`
+- GitHub Actions: `.github/workflows/ci.yml` (typecheck, build, tests)
+- Dockerfiles: `apps/api/Dockerfile`, `apps/web/Dockerfile` (not yet tested in production)
+- Architecture: `docs/architecture/overview.md`
 
 ## Useful commands
 

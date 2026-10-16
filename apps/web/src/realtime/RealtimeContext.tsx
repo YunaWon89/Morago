@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { io, type Socket } from "socket.io-client";
+import { API_URL } from "../lib/config";
 import { useAuth } from "../auth/AuthContext";
 
 const SocketContext = createContext<Socket | null>(null);
@@ -14,7 +15,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       setSocket(null);
       return;
     }
-    const connection = io({ auth: { token } });
+    const connection = io(API_URL || undefined, { auth: { token } });
     setSocket(connection);
     return () => {
       connection.disconnect();

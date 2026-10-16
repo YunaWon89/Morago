@@ -1,3 +1,4 @@
+import { apiUrl } from "./config";
 const TOKEN_KEY = "morago_token";
 
 export const tokenStore = {
@@ -31,7 +32,7 @@ export async function api<T>(method: Method, path: string, body?: unknown): Prom
   const token = tokenStore.get();
   let response: Response;
   try {
-    response = await fetch("/api" + path, {
+    response = await fetch(apiUrl("/api" + path), {
       method,
       headers: {
         ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
@@ -71,7 +72,7 @@ export async function apiUpload<T>(path: string, file: File): Promise<T> {
   form.append("file", file);
   let response: Response;
   try {
-    response = await fetch("/api" + path, {
+    response = await fetch(apiUrl("/api" + path), {
       method: "POST",
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: form,
