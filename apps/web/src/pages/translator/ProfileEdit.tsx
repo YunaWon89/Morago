@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../auth/AuthContext";
+import { Avatar } from "../../components/Avatar";
 import { Field } from "../../components/Field";
 import { TopBar } from "../../components/Layout";
 import { api, errorMessage } from "../../lib/api";
@@ -14,6 +16,7 @@ const STATUS_TEXT: Record<string, string> = {
 
 export function TranslatorProfileEdit() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [profile, setProfile] = useState<OwnTranslatorProfile | null>(null);
   const [topics, setTopics] = useState<CategoriesResponse | null>(null);
   const [languages, setLanguages] = useState<Language[]>([]);
@@ -89,6 +92,13 @@ export function TranslatorProfileEdit() {
           </div>
         )}
 
+        {user && (
+          <div className="profile-avatar">
+            <Avatar name={user.fullName} size={92} square />
+          </div>
+        )}
+        <Field label="Full name" icon="user" value={user?.fullName ?? ""} readOnly />
+        <Field label="Phone number" icon="phone" value={user?.phone ?? ""} readOnly />
         <Field label="Date of birth" icon="info" type="date" value={birth} onChange={(e) => { setBirth(e.target.value); setSaved(false); }} />
         <div className="field">
           <label>Korean level (TOPIK)</label>
@@ -153,8 +163,8 @@ export function TranslatorProfileEdit() {
           </div>
         ))}
 
-        {!complete && <p className="subtle">Choose at least one language, one topic and set a price.</p>}
-        <button className="btn orange" style={{ marginTop: 10 }} disabled={busy} onClick={save}>
+        {!complete && <p className="subtle" style={{ marginTop: 10 }}>Choose at least one language, one topic and set a price.</p>}
+        <button className="btn orange" style={{ marginTop: 10 }} disabled={busy || !complete} onClick={save}>
           {busy ? "Please wait..." : "Save"}
         </button>
       </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import { Field } from "../../components/Field";
 import { Icon } from "../../components/Icon";
@@ -13,7 +13,8 @@ export function Register() {
   const { register, user } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("form");
-  const [role, setRole] = useState<"USER" | "TRANSLATOR">("USER");
+  const [params] = useSearchParams();
+  const [role, setRole] = useState<"USER" | "TRANSLATOR">(params.get("role") === "translator" ? "TRANSLATOR" : "USER");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -81,7 +82,7 @@ export function Register() {
 
   if (step === "done") {
     return (
-      <AuthShell variant={role === "TRANSLATOR" ? "translator" : "client"}>
+      <AuthShell plain variant={role === "TRANSLATOR" ? "translator" : "client"}>
         <div className="auth-page" style={{ textAlign: "center" }}>
           <div className="success">
             <SuccessArt />
@@ -106,7 +107,7 @@ export function Register() {
 
   if (step === "code") {
     return (
-      <AuthShell variant={role === "TRANSLATOR" ? "translator" : "client"}>
+      <AuthShell plain variant={role === "TRANSLATOR" ? "translator" : "client"}>
         <form className="auth-page" onSubmit={confirm}>
           <button type="button" className="back-circle" onClick={() => setStep("form")} aria-label="Back">
             <Icon name="back" size={18} />
@@ -141,7 +142,7 @@ export function Register() {
   }
 
   return (
-    <AuthShell variant={role === "TRANSLATOR" ? "translator" : "client"}>
+    <AuthShell plain variant={role === "TRANSLATOR" ? "translator" : "client"}>
       <form className="auth-page" onSubmit={getCode}>
         <h1>{role === "TRANSLATOR" ? "Translator Registration" : "User Registration"}</h1>
         <p className="subtle">Register to access all the benefits of the app.</p>

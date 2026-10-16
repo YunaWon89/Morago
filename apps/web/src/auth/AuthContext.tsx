@@ -14,7 +14,7 @@ interface AuthApi {
   user: User | null;
   token: string | null;
   loading: boolean;
-  login: (login: string, password: string) => Promise<void>;
+  login: (login: string, password: string) => Promise<User>;
   register: (input: {
     phone: string;
     code: string;
@@ -84,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         password,
       });
       startSession(data.token, data.user);
+      return data.user;
     },
     [startSession],
   );
