@@ -4,6 +4,7 @@ import { useAuth } from "../../auth/AuthContext";
 import { AvatarPicker } from "../../components/AvatarPicker";
 import { Field } from "../../components/Field";
 import { TopBar } from "../../components/Layout";
+import { useToast } from "../../components/Toast";
 import { api, errorMessage } from "../../lib/api";
 import type { CategoriesResponse, Language, OwnTranslatorProfile } from "../../lib/types";
 
@@ -17,6 +18,7 @@ const STATUS_TEXT: Record<string, string> = {
 export function TranslatorProfileEdit() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const toast = useToast();
   const [profile, setProfile] = useState<OwnTranslatorProfile | null>(null);
   const [topics, setTopics] = useState<CategoriesResponse | null>(null);
   const [languages, setLanguages] = useState<Language[]>([]);
@@ -68,6 +70,7 @@ export function TranslatorProfileEdit() {
       });
       setProfile(data.profile);
       setSaved(true);
+      toast.success("Saved");
     } catch (e) {
       setError(errorMessage(e));
     } finally {
