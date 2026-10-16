@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
-import { Avatar } from "../../components/Avatar";
+import { AvatarPicker } from "../../components/AvatarPicker";
 import { Field } from "../../components/Field";
 import { TopBar } from "../../components/Layout";
 import { api, errorMessage } from "../../lib/api";
@@ -92,11 +92,7 @@ export function TranslatorProfileEdit() {
           </div>
         )}
 
-        {user && (
-          <div className="profile-avatar">
-            <Avatar name={user.fullName} size={92} square />
-          </div>
-        )}
+        <AvatarPicker />
         <Field label="Full name" icon="user" value={user?.fullName ?? ""} readOnly />
         <Field label="Phone number" icon="phone" value={user?.phone ?? ""} readOnly />
         <Field label="Date of birth" icon="info" type="date" value={birth} onChange={(e) => { setBirth(e.target.value); setSaved(false); }} />

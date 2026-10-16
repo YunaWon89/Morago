@@ -110,7 +110,7 @@ export function Translators() {
         )}
         {visible.map((translator) => (
           <button key={translator.id} className="list-item" onClick={() => open(translator)}>
-            <Avatar name={translator.fullName} size={46} square />
+            <Avatar fileId={translator.avatarFileId} name={translator.fullName} size={46} square />
             <div className="grow">
               <div className="name">
                 <span className={translator.isOnline ? "status-dot on" : "status-dot off"} />
@@ -137,7 +137,7 @@ export function Translators() {
           </p>
 
           <div className="list-item" style={{ marginTop: 14, marginBottom: 0 }}>
-            <Avatar name={picked.fullName} size={44} square />
+            <Avatar fileId={picked.avatarFileId} name={picked.fullName} size={44} square />
             <div className="grow">
               <Stars value={picked.ratingAvg} size={16} /> <span className="subtle">{picked.ratingAvg.toFixed(1)}</span>
             </div>

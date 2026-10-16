@@ -46,7 +46,7 @@ export function Messages() {
         )}
         {shown.map((item) => (
           <button key={item.id} className="list-item" onClick={() => navigate(`/messages/${item.id}`)}>
-            <Avatar name={item.other.fullName} size={44} />
+            <Avatar fileId={item.other.avatarFileId} name={item.other.fullName} size={44} />
             <div className="grow">
               <div className="name">{item.other.fullName}</div>
               <div className="sub" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -121,7 +121,7 @@ export function Chat() {
           <Icon name="back" size={18} />
         </button>
         <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10 }}>
-          {other && <Avatar name={other.fullName} size={36} />}
+          {other && <Avatar fileId={other.avatarFileId} name={other.fullName} size={36} />}
           <b>{other?.fullName ?? "Chat"}</b>
         </div>
       </div>

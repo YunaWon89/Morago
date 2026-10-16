@@ -63,3 +63,26 @@ export function errorMessage(error: unknown): string {
   }
   return error instanceof Error ? error.message : "Something went wrong";
 }
+
+// Sends one file as multipart/form-data (the browser sets the Content-Type header itself).
+export async function apiUpload<T>(path: string, file: File): Promise<T> {
+  const token = tokenStore.get();
+  const form = new FormData();
+  form.append("file", file);
+  let response: Response;
+  try {
+    response = await fetch("/api" + path, {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    });
+  } catch {
+    throw new ApiError(0, "Cannot reach the server. Is the API running?");
+  }
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    if (response.status === 401 && token && onUnauthorized) onUnauthorized();
+    throw new ApiError(response.status, data?.error?.message ?? `Request failed (${response.status})`);
+  }
+  return data as T;
+}

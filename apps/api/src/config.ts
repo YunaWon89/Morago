@@ -13,6 +13,8 @@ const envSchema = z.object({
   TOPUP_ACCOUNT_NUMBER: z.string().default("1234 5678 9101 1234"),
   TOPUP_MIN_AMOUNT: z.coerce.number().int().positive().default(10000),
   PAYOUT_MIN_AMOUNT: z.coerce.number().int().positive().default(50000),
+  UPLOAD_DIR: z.string().default("uploads"),
+  MAX_UPLOAD_MB: z.coerce.number().positive().default(5),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -40,4 +42,6 @@ export const config = {
   topupAccountNumber: env.TOPUP_ACCOUNT_NUMBER,
   topupMinAmount: env.TOPUP_MIN_AMOUNT,
   payoutMinAmount: env.PAYOUT_MIN_AMOUNT,
+  uploadDir: env.UPLOAD_DIR,
+  maxUploadMb: env.MAX_UPLOAD_MB,
 };

@@ -4,3 +4,5 @@ dist
 .env.local
 *.log
 apps/api/generated/
+
+apps/api/uploads
