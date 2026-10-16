@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler, RequestHandler } from "express";
+import { MulterError } from "multer";
 import { ZodError } from "zod";
 import { HttpError } from "../lib/http-error.js";
 
@@ -22,6 +23,12 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     return;
   }
 
+  if (err instanceof MulterError) {
+    const message = err.code === "LIMIT_FILE_SIZE" ? "The file is too large" : err.message;
+    res.status(400).json({ error: { message } });
+    return;
+  }
+
   if (err instanceof HttpError) {
     res.status(err.status).json({ error: { message: err.message } });
     return;
@@ -39,6 +46,6 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     return;
   }
 
-  console.error(err);
+  console.error("Unhandled error:", err);
   res.status(500).json({ error: { message: "Internal server error" } });
 };

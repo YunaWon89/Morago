@@ -88,7 +88,7 @@ export function TranslatorHome() {
         {calls.length === 0 && <div className="empty">No call history</div>}
         {calls.map((call) => (
           <div key={call.id} className="list-item">
-            <Avatar name={call.client.fullName} size={44} square />
+            <Avatar fileId={call.client.avatarFileId} name={call.client.fullName} size={44} square />
             <div className="grow">
               <div className="name">{call.client.fullName}</div>
               <div className="sub">{call.theme.name}</div>

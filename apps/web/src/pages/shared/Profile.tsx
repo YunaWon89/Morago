@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import { Avatar } from "../../components/Avatar";
+import { AvatarPicker } from "../../components/AvatarPicker";
 import { Field } from "../../components/Field";
 import { Icon } from "../../components/Icon";
 import { BrandHeader, Sheet, TopBar } from "../../components/Layout";
@@ -18,7 +19,24 @@ const INFO: Record<string, string> = {
 export function Profile() {
   const { user, logout } = useAuth();
   const [info, setInfo] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   if (!user) return null;
+
+  async function deleteAccount() {
+    setBusy(true);
+    setError(null);
+    try {
+      await api("DELETE", "/auth/me", { password });
+      logout();
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
   const isTranslator = user.role === "TRANSLATOR";
 
   return (
@@ -27,7 +45,7 @@ export function Profile() {
         <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 22 }}>My Profile</h1>
         <div className="row" style={{ justifyContent: "flex-start", gap: 14 }}>
           <div style={{ borderRadius: "50%", border: "2px solid rgba(255,255,255,0.8)", display: "inline-flex" }}>
-            <Avatar name={user.fullName} size={56} />
+            <Avatar fileId={user.avatarFileId} name={user.fullName} size={56} />
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 800, fontSize: 16 }}>{user.fullName}</div>
@@ -76,7 +94,27 @@ export function Profile() {
         <button className="btn secondary" style={{ marginTop: 20 }} onClick={logout}>
           <Icon name="logout" size={16} /> Log out
         </button>
+        <button className="link" style={{ width: "100%", marginTop: 10, color: "var(--red)" }} onClick={() => { setDeleting(true); setError(null); setPassword(""); }}>
+          Delete account
+        </button>
       </div>
+
+      {deleting && (
+        <Sheet onClose={() => setDeleting(false)}>
+          <h2>Delete account?</h2>
+          <p className="subtle" style={{ margin: "10px 0 14px", fontSize: 14 }}>
+            Your account will be closed and you will not be able to log in. Enter your password to confirm.
+          </p>
+          {error && <div className="alert error">{error}</div>}
+          <Field label="Password" icon="lock" type="password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <button className="btn red" disabled={busy || !password} onClick={deleteAccount}>
+            {busy ? "Please wait..." : "Delete account"}
+          </button>
+          <button className="btn secondary" onClick={() => setDeleting(false)}>
+            Cancel
+          </button>
+        </Sheet>
+      )}
 
       {info && (
         <Sheet onClose={() => setInfo(null)}>
@@ -119,6 +157,7 @@ export function ProfileEdit() {
       <TopBar title="Edit Profile" />
       <div className="body">
         {error && <div className="alert error">{error}</div>}
+        <AvatarPicker />
         <Field label="Full name" icon="user" placeholder="Last name First name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
         <button className="btn" disabled={busy || fullName.trim().length < 2} onClick={save}>
           {busy ? "Please wait..." : "Save Changes"}

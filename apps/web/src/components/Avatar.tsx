@@ -11,10 +11,11 @@ interface AvatarProps {
   name: string;
   size?: number;
   square?: boolean;
+  fileId?: number | null;
 }
 
-// There are no uploaded photos yet, so people are shown as a coloured portrait placeholder.
-export function Avatar({ name, size = 44, square = false }: AvatarProps) {
+// A person with an uploaded photo shows it; everyone else gets a coloured portrait placeholder.
+export function Avatar({ name, size = 44, square = false, fileId }: AvatarProps) {
   let hash = 0;
   for (const char of name) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
   const [from, to] = PALETTES[hash % PALETTES.length]!;
@@ -30,7 +31,8 @@ export function Avatar({ name, size = 44, square = false }: AvatarProps) {
       }}
       title={name}
     >
-      <svg viewBox="0 0 100 100" aria-hidden="true">
+      {fileId ? <img src={`/api/files/${fileId}`} alt={name} className="avatar-img" /> : null}
+      <svg viewBox="0 0 100 100" aria-hidden="true" style={fileId ? { display: "none" } : undefined}>
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="#fff" stopOpacity="0.85" />

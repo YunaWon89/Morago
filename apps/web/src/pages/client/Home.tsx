@@ -85,7 +85,7 @@ export function ClientHome() {
         {calls.length === 0 && <div className="empty">You have no calls yet</div>}
         {calls.map((call) => (
           <div key={call.id} className="list-item">
-            <Avatar name={call.translator.fullName} size={44} square />
+            <Avatar fileId={call.translator.avatarFileId} name={call.translator.fullName} size={44} square />
             <div className="grow">
               <div className="name">
                 {call.translator.fullName}
