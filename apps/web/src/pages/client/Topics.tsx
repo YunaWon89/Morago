@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Icon } from "../../components/Icon";
 import { api } from "../../lib/api";
-import { categoryEmoji } from "../../lib/topics";
+import { topicIcon } from "../../lib/topics";
 import type { CategoriesResponse } from "../../lib/types";
 
 export function Topics() {
@@ -67,9 +67,7 @@ export function Topics() {
                 onClick={() => setOpen(expanded && query === "" ? null : category.id)}
               >
                 <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span className="emoji" style={{ width: 40, height: 40, borderRadius: 13, background: "var(--teal-soft)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
-                    {categoryEmoji(category.name)}
-                  </span>
+                  <img src={topicIcon(category.name)} alt="" style={{ width: 44, height: 44, borderRadius: 12 }} />
                   {category.name}
                 </span>
                 <span className="subtle" style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform .2s" }}>{"\u25BC"}</span>
@@ -82,7 +80,7 @@ export function Topics() {
                       className={selected === theme.id ? "tile selected" : "tile"}
                       onClick={() => setSelected(theme.id)}
                     >
-                      <span className="emoji">{categoryEmoji(category.name)}</span>
+                      <img className="topic-ico" src={topicIcon(theme.name)} alt="" />
                       {theme.name}
                     </button>
                   ))}

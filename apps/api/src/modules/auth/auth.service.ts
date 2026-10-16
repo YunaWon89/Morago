@@ -238,6 +238,95 @@ export async function requestPasswordReset(email: string) {
   };
 }
 
+export async function sendPasswordResetCode(phone: string) {
+  const message = "If this number is registered, a code has been sent";
+  const user = await prisma.user.findUnique({ where: { phone } });
+  if (!user || user.status === "BLOCKED") {
+    return { message, expiresInSec: CODE_TTL_MS / 1000 };
+  }
+
+  const recent = await prisma.verificationCode.findFirst({
+    where: {
+      phone,
+      purpose: "PASSWORD_RESET",
+      usedAt: null,
+      expiresAt: { gt: new Date(Date.now() + CODE_TTL_MS - RESEND_COOLDOWN_MS) },
+    },
+  });
+  if (recent) {
+    throw new HttpError(429, "Please wait a minute before requesting a new code");
+  }
+
+  const code = String(crypto.randomInt(100000, 1000000));
+  await prisma.$transaction([
+    prisma.verificationCode.deleteMany({ where: { phone, purpose: "PASSWORD_RESET" } }),
+    prisma.verificationCode.create({
+      data: {
+        phone,
+        purpose: "PASSWORD_RESET",
+        codeHash: hashCode(phone, code),
+        expiresAt: new Date(Date.now() + CODE_TTL_MS),
+      },
+    }),
+  ]);
+  await sendSms(phone, `MORAGO password reset code: ${code}`);
+
+  return {
+    message,
+    expiresInSec: CODE_TTL_MS / 1000,
+    // Convenience for local testing only; never returned in production.
+    ...(config.isProduction ? {} : { devCode: code }),
+  };
+}
+
+export async function verifyPasswordResetCode(input: { phone: string; code: string }) {
+  const record = await prisma.verificationCode.findFirst({
+    where: {
+      phone: input.phone,
+      purpose: "PASSWORD_RESET",
+      usedAt: null,
+      expiresAt: { gt: new Date() },
+    },
+    orderBy: { id: "desc" },
+  });
+  if (!record) {
+    throw new HttpError(400, "Invalid or expired code");
+  }
+  if (record.attempts >= MAX_CODE_ATTEMPTS) {
+    throw new HttpError(429, "Too many attempts, request a new code");
+  }
+  if (!safeEqual(record.codeHash, hashCode(input.phone, input.code))) {
+    await prisma.verificationCode.update({
+      where: { id: record.id },
+      data: { attempts: { increment: 1 } },
+    });
+    throw new HttpError(400, "Invalid or expired code");
+  }
+
+  const user = await prisma.user.findUnique({ where: { phone: input.phone } });
+  if (!user || user.status !== "ACTIVE") {
+    throw new HttpError(400, "Invalid or expired code");
+  }
+
+  const token = crypto.randomBytes(32).toString("hex");
+  await prisma.$transaction([
+    prisma.verificationCode.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
+    prisma.passwordResetToken.updateMany({
+      where: { userId: user.id, usedAt: null },
+      data: { usedAt: new Date() },
+    }),
+    prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        tokenHash: hashToken(token),
+        expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+      },
+    }),
+  ]);
+
+  return { token };
+}
+
 export async function resetPassword(input: { token: string; password: string }) {
   const record = await prisma.passwordResetToken.findUnique({
     where: { tokenHash: hashToken(input.token) },
