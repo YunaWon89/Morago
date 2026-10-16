@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: mysql://root:root@127.0.0.1:3307/morago
+      JWT_SECRET: ci-secret-ci-secret-ci-secret-ci-secret-1234
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install packages
+        run: pnpm install
+
+      - name: Generate Prisma client
+        run: pnpm --filter api exec prisma generate
+
+      - name: Type check the API
+        run: pnpm --filter api typecheck
+
+      - name: Type check and build the web app
+        run: |
+          pnpm --filter web exec tsc -b
+          pnpm --filter web build
+
+      - name: API tests
+        run: pnpm --filter api test

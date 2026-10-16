@@ -13,7 +13,9 @@ const envSchema = z.object({
   TOPUP_ACCOUNT_NUMBER: z.string().default("1234 5678 9101 1234"),
   TOPUP_MIN_AMOUNT: z.coerce.number().int().positive().default(10000),
   PAYOUT_MIN_AMOUNT: z.coerce.number().int().positive().default(50000),
+  // Several addresses can be listed, separated by commas.
   UPLOAD_DIR: z.string().default("uploads"),
+  RATE_LIMIT_AUTH_MAX: z.coerce.number().int().positive().default(30),
   MAX_UPLOAD_MB: z.coerce.number().positive().default(5),
 });
 
@@ -37,6 +39,8 @@ export const config = {
   jwtSecret: env.JWT_SECRET,
   jwtExpiresInSeconds: env.JWT_EXPIRES_IN_DAYS * 24 * 60 * 60,
   clientUrl: env.CLIENT_URL,
+  clientOrigins: env.CLIENT_URL.split(",").map((value) => value.trim().replace(/\/+$/, "")).filter(Boolean),
+  rateLimitAuthMax: env.RATE_LIMIT_AUTH_MAX,
   commissionPercent: env.PLATFORM_COMMISSION_PERCENT,
   topupBankName: env.TOPUP_BANK_NAME,
   topupAccountNumber: env.TOPUP_ACCOUNT_NUMBER,
