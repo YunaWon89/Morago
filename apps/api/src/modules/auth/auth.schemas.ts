@@ -35,6 +35,11 @@ export const loginSchema = z.object({
 
 export const forgotPasswordSchema = z.object({ email });
 
+export const verifyResetCodeSchema = z.object({
+  phone,
+  code: z.string().regex(/^\d{6}$/, "Code must be 6 digits"),
+});
+
 export const resetPasswordSchema = z.object({
   token: z.string().min(32).max(128),
   password,

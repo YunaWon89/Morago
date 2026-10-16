@@ -7,6 +7,7 @@ import {
   registerSchema,
   resetPasswordSchema,
   sendCodeSchema,
+  verifyResetCodeSchema,
   updateProfileSchema,
 } from "./auth.schemas.js";
 import {
@@ -16,7 +17,9 @@ import {
   registerUser,
   requestPasswordReset,
   resetPassword,
+  sendPasswordResetCode,
   sendRegistrationCode,
+  verifyPasswordResetCode,
   updateProfile,
 } from "./auth.service.js";
 
@@ -44,6 +47,18 @@ authRouter.get("/me", requireAuth, async (req, res) => {
 authRouter.post("/forgot-password", async (req, res) => {
   const { email } = forgotPasswordSchema.parse(req.body ?? {});
   res.json(await requestPasswordReset(email));
+});
+
+// Reset by SMS code: 1) ask for a code for a phone number, 2) check the code and get a one-time token,
+// 3) send that token to /reset-password together with the new password.
+authRouter.post("/forgot-password/phone", async (req, res) => {
+  const { phone } = sendCodeSchema.parse(req.body ?? {});
+  res.json(await sendPasswordResetCode(phone));
+});
+
+authRouter.post("/forgot-password/verify", async (req, res) => {
+  const input = verifyResetCodeSchema.parse(req.body ?? {});
+  res.json(await verifyPasswordResetCode(input));
 });
 
 authRouter.post("/reset-password", async (req, res) => {

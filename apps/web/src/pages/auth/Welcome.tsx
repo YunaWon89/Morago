@@ -21,31 +21,24 @@ export function welcomeSeen(): boolean {
 }
 
 export function LogoMark({ size = 60 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 60 60" aria-hidden="true">
-      <rect width="60" height="60" rx="14" fill="#fff" />
-      <circle cx="15" cy="31" r="6.5" fill="#1b9bb8" />
-      <path d="M25 24.5h6a6.5 6.5 0 0 1 0 13h-6z" fill="#d0021b" transform="translate(0 0)" />
-      <circle cx="45" cy="31" r="6.5" fill="#ec9610" />
-    </svg>
-  );
+  return <img className="mark" src="/img/logomark.png" width={size} height={size} alt="" />;
 }
 
 const SLIDES = [
   {
     title: "Don't understand or can't explain?",
     text: "The Morago app will help, just choose your translator",
-    bg: "linear-gradient(180deg, #a98a6a 0%, #8c6d52 38%, #2b2420 70%, #000 100%)",
+    bg: "url(/img/ob/1.jpg)",
   },
   {
     title: "From hospital to realtor",
     text: "Choose from various topics — from puden-san to hospital",
-    bg: "linear-gradient(180deg, #dfe8ee 0%, #9fb2bd 38%, #2a3238 70%, #000 100%)",
+    bg: "url(/img/ob/2.jpg)",
   },
   {
     title: "First call on us",
     text: "Call and pay only for the minutes you actually used",
-    bg: "linear-gradient(180deg, #e9e9ea 0%, #b3b4b6 38%, #2a2b2d 70%, #000 100%)",
+    bg: "url(/img/ob/3.jpg)",
   },
 ];
 
@@ -81,7 +74,7 @@ export function Welcome() {
   return (
     <div
       className="onboarding"
-      style={{ background: slide.bg }}
+      style={{ backgroundImage: slide.bg }}
       onTouchStart={(e) => setTouchX(e.touches[0]?.clientX ?? null)}
       onTouchEnd={(e) => {
         const end = e.changedTouches[0]?.clientX;
@@ -92,8 +85,7 @@ export function Welcome() {
         setTouchX(null);
       }}
     >
-      <span className="ob-circle red" style={index % 2 ? { right: -26, left: "auto" } : undefined} />
-      <span className="ob-circle orange" style={index === 1 ? { left: -46, right: "auto" } : undefined} />
+
       <button className="ob-skip" onClick={() => go("/login")}>
         Skip
       </button>

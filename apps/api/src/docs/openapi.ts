@@ -94,6 +94,8 @@ add("get", "/api/auth/me", { tag: "Auth", summary: "Current user", auth: true })
 add("patch", "/api/auth/profile", { tag: "Auth", summary: "Change my name", auth: true, body: { fullName: "Kim Dmitrii" } });
 add("post", "/api/auth/change-password", { tag: "Auth", summary: "Change my password", auth: true, body: { currentPassword: "old", newPassword: "newsecret123" } });
 add("post", "/api/auth/forgot-password", { tag: "Auth", summary: "Send a password reset link by email (in development the link is written to the server log)", body: { email: "kim@example.com" } });
+add("post", "/api/auth/forgot-password/phone", { tag: "Auth", summary: "Send a 6-digit password reset code by SMS (in development the code is returned as devCode)", body: { phone: "01012345678" } });
+add("post", "/api/auth/forgot-password/verify", { tag: "Auth", summary: "Check the SMS code; returns a one-time token for /reset-password", body: { phone: "01012345678", code: "123456" } });
 add("post", "/api/auth/reset-password", { tag: "Auth", summary: "Set a new password with the token from the email", body: { token: "…", password: "newsecret123" } });
 add("delete", "/api/auth/me", { tag: "Auth", summary: "Delete my account (the account is closed, call and payment history is kept)", auth: true, body: { password: "secret1234" } });
 
@@ -104,7 +106,7 @@ add("get", "/api/categories", { tag: "Reference", summary: "Categories with thei
 // ---- Files ----
 add("post", "/api/files", { tag: "Files", summary: "Upload an image or a PDF (max 5 MB)", auth: true, file: true, statuses: [201] });
 add("post", "/api/files/avatar", { tag: "Files", summary: "Upload a picture and make it my avatar", auth: true, file: true, statuses: [201] });
-add("get", "/api/files/{id}", { tag: "Files", summary: "Open a file (redirects to the stored file)" });
+add("get", "/api/files/{id}", { tag: "Files", summary: "Open a file (image or PDF)" });
 
 // ---- Translators ----
 add("get", "/api/translators", { tag: "Translators", summary: "List translators (filters: languageId, themeId, online; sorting; pagination)", auth: true, query: { languageId: "integer", themeId: "integer", online: "boolean", sort: "string", ...page } });

@@ -7,7 +7,7 @@ import { Stars } from "../../components/Stars";
 import { useCall } from "../../call/CallContext";
 import { api } from "../../lib/api";
 import { formatDate } from "../../lib/format";
-import { EMERGENCY_EMOJI, categoryEmoji } from "../../lib/topics";
+import { topicIcon } from "../../lib/topics";
 import type { CallDto, CategoriesResponse, Paginated, WalletResponse } from "../../lib/types";
 
 export function ClientHome() {
@@ -16,13 +16,17 @@ export function ClientHome() {
   const [balance, setBalance] = useState<number | null>(null);
   const [topics, setTopics] = useState<CategoriesResponse | null>(null);
   const [calls, setCalls] = useState<CallDto[]>([]);
+  const [callsLoaded, setCallsLoaded] = useState(false);
 
   useEffect(() => {
     api<WalletResponse>("GET", "/wallet?limit=1")
       .then((data) => setBalance(data.balance))
       .catch(() => undefined);
     api<Paginated<CallDto>>("GET", "/calls?status=ENDED&limit=3")
-      .then((data) => setCalls(data.items))
+      .then((data) => {
+        setCalls(data.items);
+        setCallsLoaded(true);
+      })
       .catch(() => undefined);
   }, [callEpoch]);
 
@@ -34,8 +38,43 @@ export function ClientHome() {
 
   const emergency = topics?.uncategorizedThemes.find((theme) => theme.isEmergency);
 
+  // "First call free" promo from the design: shown once per browser tab to a client with no calls yet.
+  const [promo, setPromo] = useState(false);
+  useEffect(() => {
+    try {
+      if (!sessionStorage.getItem("morago_promo_seen")) setPromo(true);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  function closePromo(goTo?: string) {
+    try {
+      sessionStorage.setItem("morago_promo_seen", "1");
+    } catch {
+      /* ignore */
+    }
+    setPromo(false);
+    if (goTo) navigate(goTo);
+  }
+
   return (
     <div className="screen">
+      {promo && callsLoaded && calls.length === 0 && (
+        <div className="free-call" onClick={() => closePromo()}>
+          <div className="free-call-card" onClick={(event) => event.stopPropagation()}>
+            <h2>FIRST CALL FREE!</h2>
+            <p>
+              Try the Morago Translate
+              <br />
+              service on us
+            </p>
+            <img src="/img/free-call.png" alt="" />
+            <button className="btn" onClick={() => closePromo("/topics")}>
+              Try
+            </button>
+          </div>
+        </div>
+      )}
       <BrandHeader>
         <div className="balance-card">
           <div>
@@ -64,13 +103,13 @@ export function ClientHome() {
         <div className="grid">
           {topics?.categories.map((category) => (
             <button key={category.id} className="tile" onClick={() => navigate(`/topics?category=${category.id}`)}>
-              <span className="emoji">{categoryEmoji(category.name)}</span>
+              <img className="topic-ico" src={topicIcon(category.name)} alt="" />
               {category.name}
             </button>
           ))}
           {emergency && (
             <button className="tile" onClick={() => navigate(`/translators?themeId=${emergency.id}`)}>
-              <span className="emoji">{EMERGENCY_EMOJI}</span>
+              <img className="topic-ico" src={topicIcon(emergency.name)} alt="" />
               {emergency.name}
             </button>
           )}

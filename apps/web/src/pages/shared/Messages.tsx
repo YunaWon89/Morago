@@ -31,13 +31,13 @@ export function Messages() {
   return (
     <div className="screen">
       <BrandHeader>
-        <h1 style={{ fontSize: 22, marginTop: 14 }}>Messages</h1>
+        <h1 style={{ fontSize: 24, marginTop: 14, fontWeight: 700 }}>Message</h1>
         <div className="search-yellow">
           <Icon name="search" size={18} />
           <input placeholder="Search messages" value={search} onChange={(event) => setSearch(event.target.value)} />
         </div>
       </BrandHeader>
-      <div className="body">
+      <div className="body inbox">
         {items === null && <div className="empty">Loading...</div>}
         {items !== null && shown.length === 0 && (
           <div className="empty">
@@ -115,14 +115,20 @@ export function Chat() {
 
   let lastDay = "";
   return (
-    <div className="phone" style={{ height: "100vh" }}>
-      <div className="topbar" style={{ borderBottom: "1px solid var(--line)" }}>
-        <button className="icon-btn light" onClick={() => navigate("/messages")} aria-label="Back">
-          <Icon name="back" size={18} />
+    <div className="phone chat-page" style={{ height: "100vh" }}>
+      <div className="chat-head">
+        <button className="chat-back" onClick={() => navigate("/messages")} aria-label="Back">
+          <Icon name="back" size={22} />
         </button>
-        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 10 }}>
-          {other && <Avatar fileId={other.avatarFileId} name={other.fullName} size={36} />}
+        {other && (
+          <span className="chat-avatar">
+            <Avatar fileId={other.avatarFileId} name={other.fullName} size={46} />
+            <i className="online" />
+          </span>
+        )}
+        <div className="chat-title">
           <b>{other?.fullName ?? "Chat"}</b>
+          {other && <span>{other.role === "TRANSLATOR" ? "Translator" : "Client"}</span>}
         </div>
       </div>
 
@@ -136,17 +142,15 @@ export function Chat() {
           return (
             <div key={message.id} style={{ display: "contents" }}>
               {showDay && (
-                <div className="subtle" style={{ textAlign: "center", margin: "6px 0" }}>
-                  {day}
-                </div>
+                <div className="chat-day">{day}</div>
               )}
               <div className={message.senderId === user?.id ? "bubble mine" : "bubble theirs"}>
                 {message.text}
-                <small>
-                  {message.callId ? "during a call · " : ""}
-                  {formatTime(message.createdAt)}
-                </small>
               </div>
+              <small className={message.senderId === user?.id ? "stamp mine" : "stamp"}>
+                {message.callId ? "during a call · " : ""}
+                {formatTime(message.createdAt)}
+              </small>
             </div>
           );
         })}
@@ -154,6 +158,7 @@ export function Chat() {
       </div>
 
       <div className="chat-input">
+        <Icon name="paperclip" size={20} />
         <input
           placeholder="Start typing..."
           value={text}
@@ -161,7 +166,7 @@ export function Chat() {
           onKeyDown={(event) => event.key === "Enter" && send()}
         />
         <button onClick={send} aria-label="Send">
-          <Icon name="send" size={18} />
+          <Icon name="send" size={22} />
         </button>
       </div>
     </div>
