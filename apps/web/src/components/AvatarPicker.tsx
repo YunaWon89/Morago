@@ -3,11 +3,13 @@ import { useAuth } from "../auth/AuthContext";
 import { apiUpload, errorMessage } from "../lib/api";
 import { Avatar } from "./Avatar";
 import { Icon } from "./Icon";
+import { useToast } from "./Toast";
 
 // The big picture with a camera button, as on the "Complete your profile" screen.
 export function AvatarPicker({ size = 92 }: { size?: number }) {
   const { user, refreshUser } = useAuth();
   const input = useRef<HTMLInputElement>(null);
+  const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   if (!user) return null;
@@ -19,6 +21,7 @@ export function AvatarPicker({ size = 92 }: { size?: number }) {
     try {
       await apiUpload("/files/avatar", file);
       await refreshUser();
+      toast.success("Photo updated");
     } catch (e) {
       setError(errorMessage(e));
     } finally {

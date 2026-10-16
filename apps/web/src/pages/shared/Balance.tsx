@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import { Icon } from "../../components/Icon";
 import { BrandHeader, Sheet, SuccessArt, TopBar } from "../../components/Layout";
+import { useToast } from "../../components/Toast";
 import { useCall } from "../../call/CallContext";
 import { api, errorMessage } from "../../lib/api";
 import { formatDate, formatWon } from "../../lib/format";
@@ -96,6 +97,7 @@ const AMOUNTS = [10000, 30000, 50000, 100000];
 
 export function TopUp() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [info, setInfo] = useState<{ bankName: string; accountNumber: string; minAmount: number } | null>(null);
   const [sender, setSender] = useState("");
   const [amount, setAmount] = useState(AMOUNTS[0]!);
@@ -142,6 +144,7 @@ export function TopUp() {
               onClick={() => {
                 navigator.clipboard?.writeText(info?.accountNumber ?? "").catch(() => undefined);
                 setCopied(true);
+                toast.success("Account number copied");
               }}
             >
               <Icon name="copy" size={14} /> {copied ? "Copied" : "Copy"}
