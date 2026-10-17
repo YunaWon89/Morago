@@ -518,6 +518,7 @@ h1, h2, h3, p { margin: 0; }
 .ob-actions { padding: 0 24px 40px; display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
 .ob-actions .btn + .btn { margin-top: 0; }
 .btn.light { background: #f5f7f9; color: var(--ink); box-shadow: none; }
+.ob-wide { display: none; }
 .ob-link { text-align: center; color: rgba(255, 255, 255, 0.85); font-size: 13px; margin-top: 8px; }
 
 /* ---------- avatars with a real photo ---------- */
@@ -549,3 +550,63 @@ h1, h2, h3, p { margin: 0; }
 .toast.error .toast-dot { background: var(--hangup); }
 .toast.info .toast-dot { background: #7cc7da; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+
+/* ---------- wide screens: the phone design becomes a full-width website ---------- */
+/* The page uses the whole window. Headers and nav stretch edge to edge, the content stays readable. */
+@media (min-width: 760px) {
+  :root { --side: max(32px, calc((100% - 1240px) / 2)); }
+  body { padding: 0; background: #fff; }
+  .phone {
+    max-width: none; width: 100%; min-height: 100vh; margin: 0; border-radius: 0; box-shadow: none;
+  }
+  .phone > .tabbar {
+    position: static; transform: none; order: -1; max-width: none; width: auto;
+    background: #fff; backdrop-filter: none; box-shadow: none; border-top: 0; border-bottom: 1px solid var(--line);
+    padding: 12px var(--side); justify-content: flex-end; gap: 6px;
+  }
+  .tab { flex: 0 0 auto; flex-direction: row; gap: 9px; font-size: 14px; padding: 10px 22px; border-radius: 999px; }
+  .tab:hover { background: var(--surface); }
+  .tab.active { background: var(--teal-soft); }
+  .tab.active svg { transform: none; }
+  .tab .badge { position: static; margin-left: 2px; }
+  .screen { padding-bottom: 40px; }
+  .body { padding: 28px var(--side); }
+  .header { padding: 26px var(--side) 30px; }
+  .topbar { padding: 24px var(--side) 6px; }
+  .topbar h1 { text-align: left; margin-right: 0; font-size: 20px; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .body .btn { max-width: 420px; margin-left: auto; margin-right: auto; }
+  .overlay-bg { align-items: center; }
+  .sheet { max-width: 480px; border-radius: 26px; padding-top: 24px; }
+  .sheet .grabber { display: none; }
+  .toasts { max-width: 420px; }
+
+  /* login, registration, recovery: full-screen, picture on the left and the form on the right */
+  body:has(.phone.auth-screen) { background: #fff; }
+  .phone.auth-screen { flex-direction: row; width: 100%; min-height: 100vh; margin: 0; border-radius: 0; box-shadow: none; }
+  .phone.auth-screen::before { content: none; }
+  .phone.auth-screen:has(> .auth-plain)::before {
+    content: ""; flex: 0 0 46%; background: url("/img/logo-white.png") center / 220px no-repeat, var(--facets) center / cover, var(--header);
+  }
+  .phone.auth-screen .auth-hero { flex: 0 0 46%; padding: 64px clamp(32px, 5vw, 80px); display: flex; flex-direction: column; justify-content: center; }
+  .phone.auth-screen .auth-hero .logo { width: 200px; height: 62px; }
+  .phone.auth-screen .auth-hero p { max-width: 380px; font-size: 18px; }
+  .phone.auth-screen .auth-sheet { margin-top: 0; border-radius: 0; padding: 56px clamp(32px, 6vw, 96px); display: flex; flex-direction: column; justify-content: center; }
+  .phone.auth-screen .auth-sheet > *, .phone.auth-screen .auth-plain > * { width: 100%; max-width: 480px; margin-left: auto; margin-right: auto; }
+  .phone.auth-screen .auth-plain { flex: 1; padding: 56px clamp(32px, 6vw, 96px); display: flex; flex-direction: column; justify-content: center; }
+
+  /* start screens (splash and the three pictures) cover the whole window */
+  .onboarding { max-width: none; background-image: none !important; background: #000; }
+  .ob-wide {
+    position: absolute; inset: 0; background: #0d1620 url("/img/ob/wide.jpg") center 18% / cover no-repeat;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .ob-wide::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0.55) 62%, rgba(0,0,0,0.92) 100%); }
+  .ob-wide-text { position: relative; z-index: 1; text-align: center; padding: 0 24px 250px; max-width: 760px; }
+  .ob-wide-text h2 { font-size: clamp(26px, 3vw, 42px); line-height: 1.2; font-weight: 800; letter-spacing: -0.4px; }
+  .ob-wide-text p { margin-top: 12px; font-size: clamp(14px, 1.2vw, 18px); opacity: 0.85; }
+  .ob-content { display: none; }
+  .ob-actions { position: relative; z-index: 2; width: 100%; max-width: 480px; margin-left: auto; margin-right: auto; padding-bottom: 36px; }
+  .ob-skip { top: 32px; right: 40px; font-size: 15px; z-index: 3; color: #fff; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7); }
+  .phone.chat-page { max-width: 900px; margin: 0 auto; box-shadow: 0 0 60px rgba(0, 40, 55, 0.12); }
+}

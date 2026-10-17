@@ -58,6 +58,9 @@ interface CallApi {
 
 const CallContext = createContext<CallApi | null>(null);
 
+// Thrown when the call was closed while the peer connection was still being prepared. Not a user-facing error.
+class StaleCallError extends Error {}
+
 export function CallProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const socket = useSocket();
@@ -113,13 +116,20 @@ export function CallProvider({ children }: { children: ReactNode }) {
   );
 
   // Billing starts when the audio/video connection is really established.
+  // Both sides confirm it, so a client that skips /start cannot get a free call.
+  // If the confirmation fails, the unconfirmed call is ended.
   const onConnected = useCallback(() => {
     const current = callRef.current;
-    if (user?.role === "USER" && current && current.status === "ACCEPTED" && !startedSent.current) {
-      startedSent.current = true;
-      api("POST", `/calls/${current.id}/start`).catch(() => undefined);
-    }
-  }, [user?.role]);
+    if (!user || !current || current.status !== "ACCEPTED" || startedSent.current) return;
+    startedSent.current = true;
+    api("POST", `/calls/${current.id}/start`).catch(async () => {
+      const latest = callRef.current;
+      if (latest && latest.id === current.id && latest.status === "ACCEPTED") {
+        setMediaError("The call could not be started");
+        await api("POST", `/calls/${current.id}/end`).catch(() => undefined);
+      }
+    });
+  }, [user]);
 
   const ensurePeer = useCallback((): Promise<void> => {
     if (!peerPromise.current) {
@@ -141,10 +151,23 @@ export function CallProvider({ children }: { children: ReactNode }) {
         if (!navigator.mediaDevices?.getUserMedia) {
           throw new Error("This browser cannot access the microphone");
         }
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: current.type === "VIDEO",
-        });
+        // If the camera is busy (another browser uses it) or blocked, the call continues with sound only.
+        let stream: MediaStream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: current.type === "VIDEO",
+          });
+        } catch (error) {
+          if (current.type !== "VIDEO") throw error;
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          setMediaError("The camera is not available, the call continues with sound only");
+        }
+        // The call may have ended while the browser was asking for the microphone.
+        if (pcRef.current !== pc || pc.signalingState === "closed") {
+          stream.getTracks().forEach((track) => track.stop());
+          throw new StaleCallError();
+        }
         localRef.current = stream;
         setLocalStream(stream);
         stream.getTracks().forEach((track) => pc.addTrack(track, stream));
@@ -160,6 +183,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   const failMedia = useCallback(
     (error: unknown) => {
+      if (error instanceof StaleCallError) return;
       const text =
         error instanceof DOMException && error.name === "NotAllowedError"
           ? "Access to the microphone or camera was denied"

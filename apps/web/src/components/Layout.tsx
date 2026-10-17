@@ -35,13 +35,13 @@ export function AuthShell({
 }) {
   if (plain) {
     return (
-      <div className={variant === "translator" ? "phone theme-orange" : "phone"}>
+      <div className={variant === "translator" ? "phone auth-screen theme-orange" : "phone auth-screen"}>
         <div className="auth-plain">{children}</div>
       </div>
     );
   }
   return (
-    <div className={variant === "translator" ? "phone theme-orange" : "phone"}>
+    <div className={variant === "translator" ? "phone auth-screen theme-orange" : "phone auth-screen"}>
       <div className="auth-hero">
         <span className="logo">morago</span>
         <p>{tagline ?? "Live translators for your life in Korea"}</p>
