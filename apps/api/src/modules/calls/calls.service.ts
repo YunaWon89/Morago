@@ -167,11 +167,16 @@ export async function createCall(
 
 export async function listMyCalls(
   user: AuthUser,
-  query: { status?: CallRow["status"]; page: number; limit: number },
+  query: { status?: CallRow["status"]; from?: string; to?: string; page: number; limit: number },
 ) {
+  const requestedAt: { gte?: Date; lt?: Date } = {};
+  if (query.from) requestedAt.gte = new Date(`${query.from}T00:00:00+09:00`);
+  if (query.to) requestedAt.lt = new Date(new Date(`${query.to}T00:00:00+09:00`).getTime() + 24 * 3600 * 1000);
+
   const where: Prisma.CallWhereInput = {
     ...(user.role === "TRANSLATOR" ? { translatorId: user.id } : { clientId: user.id }),
     ...(query.status ? { status: query.status } : {}),
+    ...(query.from || query.to ? { requestedAt } : {}),
   };
 
   const [total, rows] = await prisma.$transaction([
@@ -323,6 +328,14 @@ export async function endDeadActiveCalls() {
   for (const dead of findDeadCalls(calls, lastSeen, Date.now(), bootAt)) {
     const call = calls.find((item) => item.id === dead.id)!;
     await finishActiveCall(call, dead.endedAt);
+  }
+
+  // A call never lasts longer than CALL_MAX_MINUTES: it is ended and charged up to that limit.
+  const maxMs = config.callMaxMinutes * 60 * 1000;
+  for (const call of calls) {
+    if (Date.now() - call.startedAt.getTime() > maxMs) {
+      await finishActiveCall(call, new Date(call.startedAt.getTime() + maxMs));
+    }
   }
 
   const open = new Set(calls.map((call) => String(call.id)));

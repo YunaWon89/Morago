@@ -59,6 +59,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     api<{ user: User }>("GET", "/auth/me")
       .then((data) => {
         if (!cancelled) setUser(data.user);
+        // Silent refresh: a fresh token on every page load keeps an active user logged in.
+        // Only the stored token changes, so the socket and the page are not reset.
+        api<{ token: string }>("POST", "/auth/refresh")
+          .then((fresh) => tokenStore.set(fresh.token))
+          .catch(() => undefined);
       })
       .catch(() => {
         if (!cancelled) logout();
@@ -70,6 +75,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, [token, logout]);
+
+  // Long sessions: refresh every 30 minutes while the tab is open.
+  useEffect(() => {
+    if (!token) return;
+    const timer = setInterval(() => {
+      api<{ token: string }>("POST", "/auth/refresh")
+        .then((fresh) => tokenStore.set(fresh.token))
+        .catch(() => undefined);
+    }, 30 * 60 * 1000);
+    return () => clearInterval(timer);
+  }, [token]);
 
   const startSession = useCallback((newToken: string, newUser: User) => {
     tokenStore.set(newToken);

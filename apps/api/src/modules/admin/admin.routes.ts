@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { prisma } from "../../lib/prisma.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { adminCatalogRouter } from "./admin.catalog.routes.js";
 import { adminFinanceRouter } from "./admin.finance.routes.js";
@@ -34,6 +35,17 @@ adminRouter.get("/users", async (req, res) => {
 adminRouter.get("/users/:id", async (req, res) => {
   const { id } = idParamSchema.parse(req.params);
   res.json({ user: await getUserDetails(id) });
+});
+
+// Documents a user uploaded (for example a translator's certificates), to be checked before verification.
+adminRouter.get("/users/:id/files", async (req, res) => {
+  const { id } = idParamSchema.parse(req.params);
+  const files = await prisma.file.findMany({
+    where: { ownerId: id, userAvatars: { none: {} }, categories: { none: {} }, themes: { none: {} } },
+    orderBy: { id: "desc" },
+    select: { id: true, mimeType: true, createdAt: true },
+  });
+  res.json({ files });
 });
 
 adminRouter.post("/users/:id/block", async (req, res) => {

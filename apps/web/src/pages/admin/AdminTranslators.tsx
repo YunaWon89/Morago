@@ -167,6 +167,9 @@ export function AdminTranslators() {
                 </Link>
               </td>
               <td>
+                <Link className="adm-link" to={`/admin/translators/${row.id}/documents`}>
+                  Docs
+                </Link>{" "}
                 <button className="adm-eye" onClick={() => setOpen(row)} aria-label="Open">
                   <Icon name="eye" size={16} />
                 </button>

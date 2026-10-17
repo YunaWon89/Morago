@@ -15,6 +15,9 @@ export const listCallsQuerySchema = z.object({
   status: z
     .enum(["REQUESTED", "ACCEPTED", "ACTIVE", "ENDED", "MISSED", "REJECTED", "FAILED"])
     .optional(),
+  // Date filters: YYYY-MM-DD, both days included.
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use the format YYYY-MM-DD").optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use the format YYYY-MM-DD").optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });

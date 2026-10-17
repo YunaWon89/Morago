@@ -1,13 +1,16 @@
 import type { ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./auth/AuthContext";
+import { SoundAlerts } from "./components/SoundAlerts";
 import { CallOverlay } from "./call/CallOverlay";
 import { Loading, ShellLayout } from "./components/Layout";
 import { AdminLayout, AdminLogin } from "./pages/admin/AdminLayout";
-import { AdminCalls, AdminCategories, AdminThemes } from "./pages/admin/AdminLists";
+import { AdminDocuments } from "./pages/admin/AdminDocuments";
+import { AdminCalls, AdminCategories, AdminLanguages, AdminThemes } from "./pages/admin/AdminLists";
 import { AdminPayoutDetails, AdminPayouts, AdminTopups, AdminWithdrawHistory } from "./pages/admin/AdminMoney";
 import { AdminTranslators } from "./pages/admin/AdminTranslators";
 import { AdminCallHistory, AdminCharge, AdminDepositHistory, AdminUsers } from "./pages/admin/AdminUsers";
+import { NotFound } from "./pages/ErrorPages";
 import { ForgotPassword, ResetPassword } from "./pages/auth/Recovery";
 import { Login } from "./pages/auth/Login";
 import { Welcome, welcomeSeen } from "./pages/auth/Welcome";
@@ -58,6 +61,8 @@ export default function App() {
           <Route path="translators" element={<AdminTranslators />} />
           <Route path="translators/:id/calls" element={<AdminCallHistory kind="translator" />} />
           <Route path="translators/:id/withdrawals" element={<AdminWithdrawHistory />} />
+          <Route path="translators/:id/documents" element={<AdminDocuments />} />
+          <Route path="languages" element={<AdminLanguages />} />
           <Route path="calls" element={<AdminCalls />} />
           <Route path="topups" element={<AdminTopups />} />
           <Route path="payouts" element={<AdminPayouts />} />
@@ -96,10 +101,11 @@ export default function App() {
             </RequireAuth>
           }
         />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
 
       {user && <CallOverlay />}
+      {user && <SoundAlerts />}
     </>
   );
 }

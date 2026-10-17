@@ -19,7 +19,9 @@ Three roles: **USER** (client), **TRANSLATOR** and **ADMIN**.
 - Client: balance and top-up requests, choosing a topic and a translator, audio/video call (WebRTC), rating after a call, call history, chat with translators, notifications.
 - Translator: profile with languages and topics (admin verifies it), online status, incoming calls, earnings and payout requests.
 - Admin panel (`/admin`): users, translators, top-ups, payouts, themes and categories.
-- Files: avatar upload (jpg, png, webp, pdf, up to 5 MB).
+- Files: avatar upload and private documents (jpg, png, webp, pdf, up to 5 MB). A translator uploads certificates in the profile; only the owner and the admin can open them.
+- Admin also manages languages. Call history has filters by status and date and a details window.
+- Sessions: the token is refreshed silently (`POST /api/auth/refresh`). Pages 403 and 404, loading spinners and sounds for new messages.
 - API documentation (Swagger UI) and request logging.
 
 Money rules: the platform keeps a commission from every call (`PLATFORM_COMMISSION_PERCENT`, 20 % by default).
@@ -72,6 +74,7 @@ If port 3000 is busy, an old API process is still running; stop it and start aga
 | `RATE_LIMIT_AUTH_MAX` | auth requests per IP per 15 min | 30 |
 | `VITE_API_URL` (web) | API address for production build; empty in dev (Vite proxy) | |
 | `PLATFORM_COMMISSION_PERCENT` | platform commission | 20 |
+| `CALL_MAX_MINUTES` | a call is ended automatically after this many minutes | 120 |
 | `TOPUP_BANK_NAME`, `TOPUP_ACCOUNT_NUMBER` | bank details shown on the top-up screen | demo values |
 | `TOPUP_MIN_AMOUNT`, `PAYOUT_MIN_AMOUNT` | minimum top-up / payout, won | 10000 / 50000 |
 | `UPLOAD_DIR`, `MAX_UPLOAD_MB` | where files are stored and the size limit | uploads / 5 |
