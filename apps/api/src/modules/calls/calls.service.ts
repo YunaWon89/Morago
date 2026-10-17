@@ -278,6 +278,59 @@ export async function startCall(callId: number, user: AuthUser) {
   return reload(callId);
 }
 
+// ---------- connection liveness ----------
+// Both browsers send a heartbeat every few seconds while a call is open. If one side goes silent
+// (closed tab, lost network), the call is ended and charged only up to the last sign of life.
+export const HEARTBEAT_TIMEOUT_MS = 30_000;
+const lastSeen = new Map<string, number>();
+const bootAt = Date.now();
+
+export function noteHeartbeat(userId: number, callId: number, now = Date.now()) {
+  lastSeen.set(`${callId}:${userId}`, now);
+}
+
+type ActiveCallInfo = { id: number; clientId: number; translatorId: number; startedAt: Date };
+
+// Pure decision: which active calls lost a participant, and when to stop charging.
+export function findDeadCalls(
+  calls: ActiveCallInfo[],
+  seen: Map<string, number>,
+  now: number,
+  startedFrom: number,
+  timeoutMs = HEARTBEAT_TIMEOUT_MS,
+) {
+  const dead: { id: number; endedAt: Date }[] = [];
+  for (const call of calls) {
+    // Before the first heartbeat (or after a server restart) the call counts as alive since its start/boot.
+    const base = Math.max(call.startedAt.getTime(), startedFrom);
+    const client = seen.get(`${call.id}:${call.clientId}`) ?? base;
+    const translator = seen.get(`${call.id}:${call.translatorId}`) ?? base;
+    const oldest = Math.min(client, translator);
+    if (now - oldest > timeoutMs) {
+      dead.push({ id: call.id, endedAt: new Date(Math.max(call.startedAt.getTime(), oldest)) });
+    }
+  }
+  return dead;
+}
+
+export async function endDeadActiveCalls() {
+  const active = await prisma.call.findMany({
+    where: { status: "ACTIVE", startedAt: { not: null } },
+    select: { id: true, clientId: true, translatorId: true, startedAt: true, pricePerMinute: true },
+  });
+  const calls = active.map((call) => ({ ...call, startedAt: call.startedAt as Date }));
+
+  for (const dead of findDeadCalls(calls, lastSeen, Date.now(), bootAt)) {
+    const call = calls.find((item) => item.id === dead.id)!;
+    await finishActiveCall(call, dead.endedAt);
+  }
+
+  const open = new Set(calls.map((call) => String(call.id)));
+  for (const key of lastSeen.keys()) {
+    if (!open.has(key.split(":")[0]!)) lastSeen.delete(key);
+  }
+}
+
 export async function endCall(callId: number, user: AuthUser) {
   const call = await loadCall(callId, user);
 
@@ -298,7 +351,32 @@ export async function endCall(callId: number, user: AuthUser) {
     throw new HttpError(409, `The call cannot be ended in status ${call.status}`);
   }
 
-  const endedAt = new Date();
+  // If the other side has been silent (closed tab, lost network), the silence is not charged:
+  // the call is counted only up to the last sign of life of the other side.
+  const otherId = user.id === call.clientId ? call.translatorId : call.clientId;
+  const endedAt = chargeUntil(Date.now(), lastSeen.get(`${callId}:${otherId}`), call.startedAt);
+  return finishActiveCall(call, endedAt);
+}
+
+// A heartbeat comes every 5 seconds, so more than 8 seconds of silence means at least one was missed.
+export const SILENCE_LIMIT_MS = 8_000;
+
+export function chargeUntil(now: number, otherSeen: number | undefined, startedAt: Date, limitMs = SILENCE_LIMIT_MS) {
+  if (otherSeen !== undefined && now - otherSeen > limitMs) {
+    return new Date(Math.max(startedAt.getTime(), otherSeen));
+  }
+  return new Date(now);
+}
+
+// Ends an ACTIVE call and charges for the time up to endedAt.
+async function finishActiveCall(
+  call: { id: number; clientId: number; translatorId: number; startedAt: Date | null; pricePerMinute: unknown },
+  endedAt: Date,
+) {
+  const callId = call.id;
+  if (!call.startedAt) {
+    return reload(callId);
+  }
   const durationSec = Math.max(0, Math.floor((endedAt.getTime() - call.startedAt.getTime()) / 1000));
   const price = Number(call.pricePerMinute);
 

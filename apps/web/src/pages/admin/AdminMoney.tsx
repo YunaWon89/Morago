@@ -99,9 +99,9 @@ export function AdminPayoutDetails() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    api<Paginated<Payout>>("GET", "/admin/payouts?limit=100")
-      .then((data) => setPayout(data.items.find((item) => item.id === id) ?? null))
-      .catch(() => undefined);
+    api<{ payout: Payout }>("GET", `/admin/payouts/${id}`)
+      .then((data) => setPayout(data.payout))
+      .catch((e) => setError(errorMessage(e)));
   }, [id]);
 
   async function process(status: "PAID" | "REJECTED") {

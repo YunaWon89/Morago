@@ -78,6 +78,15 @@ export function TranslatorProfileEdit() {
     }
   }
 
+  // Themes without a category (for example the emergency call) are shown as their own group.
+  const themeGroups = topics
+    ? [
+        ...topics.categories,
+        ...(topics.uncategorizedThemes.length > 0
+          ? [{ id: -1, name: "Other topics", themes: topics.uncategorizedThemes }]
+          : []),
+      ]
+    : [];
   const complete = langIds.length > 0 && Object.keys(themes).length > 0 && Number(price) > 0;
 
   return (
@@ -133,7 +142,7 @@ export function TranslatorProfileEdit() {
         </div>
 
         <h2 className="section-title">Topics for translation</h2>
-        {topics?.categories.map((category) => (
+        {themeGroups.map((category) => (
           <div key={category.id} style={{ marginBottom: 14 }}>
             <p className="subtle" style={{ marginBottom: 6, fontWeight: 700 }}>
               {category.name}

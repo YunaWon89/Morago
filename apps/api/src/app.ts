@@ -8,7 +8,7 @@ import { config } from "./config.js";
 import { requestLogger } from "./middleware/request-logger.js";
 import { swaggerRouter } from "./docs/swagger.js";
 import { accountRouter } from "./modules/auth/account.routes.js";
-import { filesRouter, uploadsDir } from "./modules/files/files.routes.js";
+import { filesRouter } from "./modules/files/files.routes.js";
 import { errorHandler, notFoundHandler } from "./middleware/error-handler.js";
 import { adminRouter } from "./modules/admin/admin.routes.js";
 import { callsRouter } from "./modules/calls/calls.routes.js";
@@ -60,7 +60,7 @@ if (!config.isProduction) {
   app.use("/test", express.static(fileURLToPath(new URL("../public", import.meta.url))));
 }
 
-app.use("/uploads", express.static(uploadsDir));
+// Uploaded files are NOT served as static files: every file goes through GET /api/files/:id, which checks access.
 app.use("/api/docs", swaggerRouter);
 app.use(
   [
