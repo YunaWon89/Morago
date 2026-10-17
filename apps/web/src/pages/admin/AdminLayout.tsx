@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import { Icon } from "../../components/Icon";
 import { Loading } from "../../components/Layout";
@@ -18,7 +18,7 @@ export function AdminLogin() {
 
   useEffect(() => {
     if (user && user.role !== "ADMIN") {
-      setError("This account is not an administrator");
+      setError("This is not an administrator account. Use the regular login for users and translators.");
       logout();
     }
   }, [user, logout]);
@@ -43,7 +43,9 @@ export function AdminLogin() {
     <div className="adm-login">
       <div className="adm-login-top">
         <div className="brand">
-          <AdminLogo />
+          <Link to="/welcome" aria-label="morago - home" style={{ textDecoration: "none" }}>
+            <AdminLogo />
+          </Link>
         </div>
         <div className="bar" />
       </div>
@@ -71,6 +73,9 @@ export function AdminLogin() {
         <p style={{ marginTop: 16, fontSize: 12, color: "#666" }}>
           <a href="/forgot-password">Forgot Password?</a>
         </p>
+        <p style={{ marginTop: 8, fontSize: 13 }}>
+          Not an administrator? <Link to="/login">Log in as a user or translator</Link>
+        </p>
       </form>
     </div>
   );
@@ -78,6 +83,7 @@ export function AdminLogin() {
 
 export function AdminLayout() {
   const { user, loading, logout } = useAuth();
+  const navigate = useNavigate();
   const [hint, setHint] = useState(false);
 
   if (loading) return <Loading />;
@@ -88,7 +94,9 @@ export function AdminLayout() {
     <div className="adm-shell">
       <aside className="adm-side">
         <div className="brand">
-          <AdminLogo />
+          <Link to="/admin" aria-label="morago - admin home" style={{ textDecoration: "none" }}>
+            <AdminLogo />
+          </Link>
         </div>
         <nav className="adm-nav">
           <div className="group">Lists</div>
@@ -123,7 +131,14 @@ export function AdminLayout() {
           <div className="adm-user">
             <Icon name="user" size={16} />
             {user.fullName || "Admin"}
-            <button onClick={logout}>Log out</button>
+            <button
+              onClick={() => {
+                logout();
+                navigate("/welcome");
+              }}
+            >
+              Log out
+            </button>
           </div>
         </div>
         <div className="adm-content">

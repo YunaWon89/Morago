@@ -20,6 +20,16 @@ export function welcomeSeen(): boolean {
   }
 }
 
+// The animated splash is shown once per browser session, not on every visit to the welcome page.
+const SPLASH_KEY = "morago_splash_seen";
+function splashSeen(): boolean {
+  try {
+    return sessionStorage.getItem(SPLASH_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 export function LogoMark({ size = 60 }: { size?: number }) {
   return <img className="mark" src="/img/logomark.png" width={size} height={size} alt="" />;
 }
@@ -45,14 +55,22 @@ const SLIDES = [
 export function Welcome() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [splash, setSplash] = useState(true);
+  const [splash, setSplash] = useState(!splashSeen());
   const [index, setIndex] = useState(0);
   const [touchX, setTouchX] = useState<number | null>(null);
 
   useEffect(() => {
-    const id = setTimeout(() => setSplash(false), 1500);
+    if (!splash) return;
+    const id = setTimeout(() => {
+      try {
+        sessionStorage.setItem(SPLASH_KEY, "1");
+      } catch {
+        /* ignore */
+      }
+      setSplash(false);
+    }, 1500);
     return () => clearTimeout(id);
-  }, []);
+  }, [splash]);
 
   if (user) return <Navigate to="/" replace />;
 
