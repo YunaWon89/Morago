@@ -1,10 +1,36 @@
 import { apiUrl } from "./config";
 const TOKEN_KEY = "morago_token";
 
+// The token is kept in memory and in localStorage. Memory comes first, so a window keeps its own
+// login even if another window of the same browser profile changes or clears the shared storage.
+let memoryToken: string | null = null;
+
 export const tokenStore = {
-  get: () => sessionStorage.getItem(TOKEN_KEY),
-  set: (token: string) => sessionStorage.setItem(TOKEN_KEY, token),
-  clear: () => sessionStorage.removeItem(TOKEN_KEY),
+  get: (): string | null => {
+    if (memoryToken) return memoryToken;
+    try {
+      memoryToken = localStorage.getItem(TOKEN_KEY);
+    } catch {
+      memoryToken = null;
+    }
+    return memoryToken;
+  },
+  set: (token: string) => {
+    memoryToken = token;
+    try {
+      localStorage.setItem(TOKEN_KEY, token);
+    } catch {
+      // storage is blocked: the login still works until the page is reloaded
+    }
+  },
+  clear: () => {
+    memoryToken = null;
+    try {
+      localStorage.removeItem(TOKEN_KEY);
+    } catch {
+      // nothing to clear
+    }
+  },
 };
 
 export class ApiError extends Error {
