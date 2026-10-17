@@ -86,6 +86,14 @@ export function Welcome() {
       }}
     >
 
+      {/* Wide screens: one wide picture with all four people (hidden on phones) */}
+      <div className="ob-wide" aria-hidden="true">
+        <div className="ob-wide-text">
+          <h2>{SLIDES[0]!.title}</h2>
+          <p>{SLIDES[0]!.text}</p>
+        </div>
+      </div>
+
       <button className="ob-skip" onClick={() => go("/login")}>
         Skip
       </button>
