@@ -54,6 +54,13 @@ export function setUnauthorizedHandler(handler: (() => void) | null) {
   onUnauthorized = handler;
 }
 
+let onServerError: ((message: string) => void) | null = null;
+
+// Called by <ApiErrorToasts/> so that server crashes and lost connections show a toast on any page.
+export function setServerErrorHandler(handler: ((message: string) => void) | null) {
+  onServerError = handler;
+}
+
 export async function api<T>(method: Method, path: string, body?: unknown): Promise<T> {
   const token = tokenStore.get();
   let response: Response;
@@ -67,11 +74,13 @@ export async function api<T>(method: Method, path: string, body?: unknown): Prom
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch {
+    onServerError?.("Cannot reach the server. Check your internet connection.");
     throw new ApiError(0, "Cannot reach the server. Is the API running?");
   }
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
+    if (response.status >= 500) onServerError?.("Something went wrong on our side. Please try again in a moment.");
     const message: string = data?.error?.message ?? `Request failed (${response.status})`;
     if (response.status === 401 && token && onUnauthorized) {
       onUnauthorized();

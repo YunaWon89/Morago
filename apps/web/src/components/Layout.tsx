@@ -43,7 +43,7 @@ export function AuthShell({
   return (
     <div className={variant === "translator" ? "phone auth-screen theme-orange" : "phone auth-screen"}>
       <div className="auth-hero">
-        <span className="logo">morago</span>
+        <BrandLink />
         <p>{tagline ?? "Live translators for your life in Korea"}</p>
       </div>
       <div className="auth-sheet">{children}</div>
@@ -120,7 +120,7 @@ export function BrandHeader({ children }: { children?: ReactNode }) {
     <header className="header">
       <div className="header-row">
         <span style={{ width: 36 }} />
-        <span className="logo">morago</span>
+        <BrandLink />
         <BellButton />
       </div>
       {children}
@@ -184,5 +184,16 @@ export function SkeletonList({ rows = 4 }: { rows?: number }) {
         </div>
       ))}
     </div>
+  );
+}
+
+// The morago logo is a link: logged-out pages lead to the welcome page, signed-in pages to the home screen.
+export function BrandLink() {
+  const { user } = useAuth();
+  const to = user ? (user.role === "ADMIN" ? "/admin" : "/") : "/welcome";
+  return (
+    <Link to={to} className="logo" aria-label="morago - home">
+      morago
+    </Link>
   );
 }
