@@ -2,7 +2,7 @@ import http from "node:http";
 import { app } from "./app.js";
 import { prisma } from "./lib/prisma.js";
 import { config } from "./config.js";
-import { expireStaleCalls } from "./modules/calls/calls.service.js";
+import { endDeadActiveCalls, expireStaleCalls } from "./modules/calls/calls.service.js";
 import { initSocket } from "./realtime/socket.js";
 
 const server = http.createServer(app);
@@ -21,3 +21,8 @@ prisma.translatorProfile
 setInterval(() => {
   expireStaleCalls().catch((error) => console.error("expireStaleCalls failed", error));
 }, 30_000).unref();
+
+// A call whose participant disappeared (closed tab, lost network) is ended and charged up to the last heartbeat.
+setInterval(() => {
+  endDeadActiveCalls().catch((error) => console.error("endDeadActiveCalls failed", error));
+}, 10_000).unref();

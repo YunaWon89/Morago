@@ -5,6 +5,7 @@ import { config } from "../config.js";
 import { authenticateToken, type AuthUser } from "../lib/authenticate.js";
 import { HttpError } from "../lib/http-error.js";
 import { prisma } from "../lib/prisma.js";
+import { noteHeartbeat } from "../modules/calls/calls.service.js";
 import { emitToUser, setIo } from "./io.js";
 
 const signalSchema = z.object({
@@ -12,6 +13,8 @@ const signalSchema = z.object({
   type: z.enum(["offer", "answer", "ice"]),
   data: z.unknown(),
 });
+
+const heartbeatSchema = z.object({ callId: z.number().int().positive() });
 
 // A translator who closes the last tab stays online for a short grace period (page reloads).
 const OFFLINE_GRACE_MS = 30_000;
@@ -129,6 +132,12 @@ export function initSocket(httpServer: HttpServer) {
 
     // WebRTC signaling: the server only relays offers, answers and ICE candidates
     // between the two participants of a call. Audio and video never pass through it.
+    // Sent every few seconds by both sides of an open call (see endDeadActiveCalls).
+    socket.on("call:heartbeat", (raw: unknown) => {
+      const parsed = heartbeatSchema.safeParse(raw);
+      if (parsed.success) noteHeartbeat(user.id, parsed.data.callId);
+    });
+
     socket.on("webrtc:signal", (raw: unknown, maybeAck?: unknown) => {
       void handleSignal(user, raw, maybeAck);
     });
