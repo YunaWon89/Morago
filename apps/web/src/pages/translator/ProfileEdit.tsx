@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import { AvatarPicker } from "../../components/AvatarPicker";
+import { Documents } from "../../components/Documents";
 import { Field } from "../../components/Field";
 import { TopBar } from "../../components/Layout";
 import { useToast } from "../../components/Toast";
@@ -140,6 +141,10 @@ export function TranslatorProfileEdit() {
             </button>
           ))}
         </div>
+
+        <h2 className="section-title">My documents</h2>
+        <p className="subtle">Certificates (for example TOPIK). Only you and the administrator can see them.</p>
+        <Documents />
 
         <h2 className="section-title">Topics for translation</h2>
         {themeGroups.map((category) => (

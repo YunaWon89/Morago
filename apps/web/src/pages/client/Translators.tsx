@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Avatar } from "../../components/Avatar";
 import { Icon } from "../../components/Icon";
-import { Sheet } from "../../components/Layout";
+import { Sheet, SkeletonList } from "../../components/Layout";
 import { Stars } from "../../components/Stars";
 import { useCall } from "../../call/CallContext";
 import { ApiError, api, errorMessage } from "../../lib/api";
@@ -104,7 +104,7 @@ export function Translators() {
           </button>
         </div>
 
-        {translators === null && <div className="empty">Loading...</div>}
+        {translators === null && <SkeletonList />}
         {translators !== null && visible.length === 0 && (
           <div className="empty">No translators for this topic yet</div>
         )}

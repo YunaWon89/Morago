@@ -58,6 +58,27 @@ async function optionalUser(authorization: string | undefined) {
   }
 }
 
+// My documents: files I uploaded that are not a profile picture or an icon (for example a TOPIK certificate).
+const notPublicUse = { userAvatars: { none: {} }, categories: { none: {} }, themes: { none: {} } };
+
+filesRouter.get("/", requireAuth, async (req, res) => {
+  const files = await prisma.file.findMany({
+    where: { ownerId: req.user!.id, ...notPublicUse },
+    orderBy: { id: "desc" },
+    select: { id: true, mimeType: true, createdAt: true },
+  });
+  res.json({ files });
+});
+
+filesRouter.delete("/:id", requireAuth, async (req, res) => {
+  const { id } = idSchema.parse(req.params);
+  const file = await prisma.file.findFirst({ where: { id, ownerId: req.user!.id, ...notPublicUse } });
+  if (!file) throw new HttpError(404, "File not found");
+  await prisma.file.delete({ where: { id } });
+  fs.rm(path.join(uploadsDir, path.basename(file.url)), { force: true }, () => undefined);
+  res.json({ deleted: true });
+});
+
 filesRouter.get("/:id", async (req, res) => {
   const { id } = idSchema.parse(req.params);
   const file = await prisma.file.findUnique({ where: { id } });

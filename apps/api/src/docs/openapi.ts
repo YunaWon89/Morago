@@ -28,16 +28,39 @@ function add(method: Method, path: string, op: Op) {
   const secured = op.auth !== undefined && op.auth !== false;
   const description = roles.length ? `Roles: ${roles.join(", ")}` : undefined;
 
+  const error = (description: string) => ({
+    description,
+    content: { "application/json": { schema: { $ref: "#/components/schemas/Error" } } },
+  });
+  const success = path.includes("/files/") && method === "get" ? "The file" : "OK";
   const responses: Record<string, unknown> = {
-    "200": { description: "OK" },
-    "400": { description: "Validation failed" },
+    "200": {
+      description: success,
+      content: { "application/json": { schema: { $ref: "#/components/schemas/Result" } } },
+    },
+    "400": error("Validation failed: details lists every wrong field"),
+    "500": error("Unexpected server error"),
   };
   if (secured) {
-    responses["401"] = { description: "Missing or invalid token" };
-    if (roles.length) responses["403"] = { description: "Insufficient permissions" };
+    responses["401"] = error("Missing, invalid or expired token");
+    if (roles.length) responses["403"] = error("This role is not allowed to use the endpoint, or the account is blocked");
+  }
+  if (path.includes("{id}")) responses["404"] = error("The object with this ID does not exist (or is not yours)");
+  if (/^\/api\/auth\/(login|register|send-code|forgot-password|reset-password)/.test(path)) {
+    responses["429"] = error("Too many attempts, try again in a few minutes");
   }
   for (const status of op.statuses ?? []) {
-    responses[String(status)] = { description: status === 201 ? "Created" : `Status ${status}` };
+    if (status === 201) {
+      responses["201"] = {
+        description: "Created",
+        content: { "application/json": { schema: { $ref: "#/components/schemas/Result" } } },
+      };
+      delete responses["200"];
+    } else if (!responses[String(status)]) {
+      responses[String(status)] = error(
+        status === 402 ? "Not enough balance" : status === 409 ? "Conflict with the current state" : `Status ${status}`,
+      );
+    }
   }
 
   const requestBody = op.file
@@ -90,6 +113,7 @@ const page = { page: "integer", limit: "integer" };
 add("post", "/api/auth/send-code", { tag: "Auth", summary: "Send an SMS code to a phone number (in development the code is returned as devCode)", body: { phone: "01012345678" } });
 add("post", "/api/auth/register", { tag: "Auth", summary: "Register a client or a translator", body: { phone: "01012345678", code: "123456", password: "secret1234", fullName: "Kim Dmitrii", email: "kim@example.com", role: "USER" }, statuses: [201, 409] });
 add("post", "/api/auth/login", { tag: "Auth", summary: "Log in with phone or email, returns a JWT", body: { login: "01012345678", password: "secret1234" }, statuses: [401] });
+add("post", "/api/auth/refresh", { tag: "Auth", summary: "Get a fresh token for the signed-in user", auth: true });
 add("get", "/api/auth/me", { tag: "Auth", summary: "Current user", auth: true });
 add("patch", "/api/auth/profile", { tag: "Auth", summary: "Change my name", auth: true, body: { fullName: "Kim Dmitrii" } });
 add("post", "/api/auth/change-password", { tag: "Auth", summary: "Change my password", auth: true, body: { currentPassword: "old", newPassword: "newsecret123" } });
@@ -106,6 +130,8 @@ add("get", "/api/categories", { tag: "Reference", summary: "Categories with thei
 // ---- Files ----
 add("post", "/api/files", { tag: "Files", summary: "Upload an image or a PDF (max 5 MB)", auth: true, file: true, statuses: [201] });
 add("post", "/api/files/avatar", { tag: "Files", summary: "Upload a picture and make it my avatar", auth: true, file: true, statuses: [201] });
+add("get", "/api/files", { tag: "Files", summary: "My documents (files that are not a picture or an icon)", auth: true });
+add("delete", "/api/files/{id}", { tag: "Files", summary: "Delete my document", auth: true });
 add("get", "/api/files/{id}", { tag: "Files", summary: "Open a file (profile pictures and icons are public; documents only for the owner and admins)" });
 
 // ---- Translators ----
@@ -118,7 +144,7 @@ add("get", "/api/translators/{id}/reviews", { tag: "Reviews", summary: "Reviews 
 
 // ---- Calls ----
 add("post", "/api/calls", { tag: "Calls", summary: "Request a call to a translator", auth: ["USER"], body: { translatorId: 2, languageId: 1, themeId: 1, type: "AUDIO" }, statuses: [201] });
-add("get", "/api/calls", { tag: "Calls", summary: "My call history (filter by status, pagination)", auth: ["USER", "TRANSLATOR"], query: { status: "string", ...page } });
+add("get", "/api/calls", { tag: "Calls", summary: "My call history (filter by status and by date, pagination)", auth: ["USER", "TRANSLATOR"], query: { status: "string", from: "string", to: "string", ...page } });
 add("get", "/api/calls/{id}", { tag: "Calls", summary: "Call details", auth: true });
 add("post", "/api/calls/{id}/accept", { tag: "Calls", summary: "Translator accepts the call", auth: ["TRANSLATOR"] });
 add("post", "/api/calls/{id}/reject", { tag: "Calls", summary: "Translator declines the call", auth: ["TRANSLATOR"] });
@@ -160,6 +186,11 @@ add("patch", "/api/admin/topups/{id}", { tag: "Admin", summary: "Confirm or reje
 add("get", "/api/admin/payouts", { tag: "Admin", summary: "Withdrawal requests", auth: admin, query: { status: "string", ...page } });
 add("get", "/api/admin/payouts/{id}", { tag: "Admin", summary: "One withdrawal request by its ID", auth: admin });
 add("patch", "/api/admin/payouts/{id}", { tag: "Admin", summary: "Mark a withdrawal as paid or rejected", auth: admin, body: { status: "PAID" } });
+add("get", "/api/admin/users/{id}/files", { tag: "Admin", summary: "Documents a user uploaded (certificates)", auth: admin });
+add("get", "/api/admin/languages", { tag: "Admin catalog", summary: "Languages with usage counters", auth: admin });
+add("post", "/api/admin/languages", { tag: "Admin catalog", summary: "Add a language", auth: admin, body: { code: "vi", name: "Vietnamese" }, statuses: [201, 409] });
+add("patch", "/api/admin/languages/{id}", { tag: "Admin catalog", summary: "Edit a language", auth: admin, body: { name: "Vietnamese" }, statuses: [409] });
+add("delete", "/api/admin/languages/{id}", { tag: "Admin catalog", summary: "Delete a language (only if nobody uses it)", auth: admin, statuses: [409] });
 add("get", "/api/admin/categories", { tag: "Admin catalog", summary: "All categories including hidden ones", auth: admin });
 add("post", "/api/admin/categories", { tag: "Admin catalog", summary: "Create a category", auth: admin, body: { name: "Medicine" }, statuses: [201] });
 add("patch", "/api/admin/categories/{id}", { tag: "Admin catalog", summary: "Edit or hide a category", auth: admin, body: { name: "Medicine", isActive: true } });
@@ -176,7 +207,7 @@ export const openapi = {
     version: "1.0.0",
     description:
       "Translators on call for foreigners in Korea. Log in with POST /api/auth/login, copy the token and press “Authorize”.\n\n" +
-      "Real-time events (Socket.io, same host): call:incoming, call:updated, call:signal (WebRTC offer / answer / ice), message:new, notification:new.\n\n" +
+      "Real-time events (Socket.io, same host): call:incoming, call:updated, webrtc:signal (WebRTC offer / answer / ice), call:heartbeat (sent by both sides every 5 seconds while a call is open), payout:updated, message:new, notification:new.\n\n" +
       "Errors always look like { \"error\": { \"message\": \"…\", \"details\": [...] } }.",
   },
   servers: [{ url: "/" }],
@@ -187,6 +218,28 @@ export const openapi = {
   ],
   components: {
     securitySchemes: { bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" } },
+    schemas: {
+      Error: {
+        type: "object",
+        properties: {
+          error: {
+            type: "object",
+            properties: {
+              message: { type: "string", example: "Validation failed" },
+              details: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: { path: { type: "string", example: "phone" }, message: { type: "string", example: "Required" } },
+                },
+              },
+            },
+          },
+        },
+      },
+      // The body of a successful answer is JSON: one object or a list with page, limit, total and totalPages.
+      Result: { type: "object", additionalProperties: true, example: { user: { id: 1, role: "USER" } } },
+    },
   },
   paths,
 };

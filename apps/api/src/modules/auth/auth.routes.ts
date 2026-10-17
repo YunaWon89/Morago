@@ -14,6 +14,7 @@ import {
   changePassword,
   getCurrentUser,
   loginUser,
+  refreshToken,
   registerUser,
   requestPasswordReset,
   resetPassword,
@@ -38,6 +39,10 @@ authRouter.post("/register", async (req, res) => {
 authRouter.post("/login", async (req, res) => {
   const input = loginSchema.parse(req.body ?? {});
   res.json(await loginUser(input));
+});
+
+authRouter.post("/refresh", requireAuth, async (req, res) => {
+  res.json(await refreshToken(req.user!.id));
 });
 
 authRouter.get("/me", requireAuth, async (req, res) => {

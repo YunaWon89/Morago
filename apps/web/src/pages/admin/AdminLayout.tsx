@@ -2,6 +2,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import { Icon } from "../../components/Icon";
+import { Loading } from "../../components/Layout";
+import { Forbidden } from "../ErrorPages";
 import { ApiError, errorMessage } from "../../lib/api";
 import { Modal } from "./ui";
 import { AdminLogo } from "./ui";
@@ -78,8 +80,9 @@ export function AdminLayout() {
   const { user, loading, logout } = useAuth();
   const [hint, setHint] = useState(false);
 
-  if (loading) return <div className="adm-empty">Loading...</div>;
-  if (!user || user.role !== "ADMIN") return <Navigate to="/admin/login" replace />;
+  if (loading) return <Loading />;
+  if (!user) return <Navigate to="/admin/login" replace />;
+  if (user.role !== "ADMIN") return <Forbidden />;
 
   return (
     <div className="adm-shell">
@@ -102,6 +105,7 @@ export function AdminLayout() {
           </div>
           <NavLink to="/admin/themes">Themes</NavLink>
           <NavLink to="/admin/categories">Categories</NavLink>
+          <NavLink to="/admin/languages">Languages</NavLink>
         </nav>
         <div className="bottom">
           <button className="adm-add" onClick={() => setHint(true)}>
