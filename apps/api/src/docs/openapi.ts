@@ -106,7 +106,7 @@ add("get", "/api/categories", { tag: "Reference", summary: "Categories with thei
 // ---- Files ----
 add("post", "/api/files", { tag: "Files", summary: "Upload an image or a PDF (max 5 MB)", auth: true, file: true, statuses: [201] });
 add("post", "/api/files/avatar", { tag: "Files", summary: "Upload a picture and make it my avatar", auth: true, file: true, statuses: [201] });
-add("get", "/api/files/{id}", { tag: "Files", summary: "Open a file (image or PDF)" });
+add("get", "/api/files/{id}", { tag: "Files", summary: "Open a file (profile pictures and icons are public; documents only for the owner and admins)" });
 
 // ---- Translators ----
 add("get", "/api/translators", { tag: "Translators", summary: "List translators (filters: languageId, themeId, online; sorting; pagination)", auth: true, query: { languageId: "integer", themeId: "integer", online: "boolean", sort: "string", ...page } });
@@ -158,6 +158,7 @@ add("get", "/api/admin/calls", { tag: "Admin", summary: "All calls", auth: admin
 add("get", "/api/admin/topups", { tag: "Admin", summary: "Top-up requests", auth: admin, query: { status: "string", ...page } });
 add("patch", "/api/admin/topups/{id}", { tag: "Admin", summary: "Confirm or reject a top-up", auth: admin, body: { status: "COMPLETED" } });
 add("get", "/api/admin/payouts", { tag: "Admin", summary: "Withdrawal requests", auth: admin, query: { status: "string", ...page } });
+add("get", "/api/admin/payouts/{id}", { tag: "Admin", summary: "One withdrawal request by its ID", auth: admin });
 add("patch", "/api/admin/payouts/{id}", { tag: "Admin", summary: "Mark a withdrawal as paid or rejected", auth: admin, body: { status: "PAID" } });
 add("get", "/api/admin/categories", { tag: "Admin catalog", summary: "All categories including hidden ones", auth: admin });
 add("post", "/api/admin/categories", { tag: "Admin catalog", summary: "Create a category", auth: admin, body: { name: "Medicine" }, statuses: [201] });

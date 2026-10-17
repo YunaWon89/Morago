@@ -19,6 +19,31 @@ function toDto(payout: PayoutRow) {
   };
 }
 
+type PayoutWithTranslator = PayoutRow & {
+  translator: { user: { fullName: string; phone: string } };
+};
+
+function toAdminDto(row: PayoutWithTranslator) {
+  return {
+    ...toDto(row),
+    translatorName: row.translator.user.fullName,
+    translatorPhone: row.translator.user.phone,
+  };
+}
+
+const withTranslator = {
+  translator: { include: { user: { select: { fullName: true, phone: true } } } },
+} as const;
+
+// One request by its ID (the admin card must not depend on the page of a list).
+export async function getPayoutForAdmin(payoutId: number) {
+  const row = await prisma.payoutRequest.findUnique({ where: { id: payoutId }, include: withTranslator });
+  if (!row) {
+    throw new HttpError(404, "Payout request not found");
+  }
+  return toAdminDto(row);
+}
+
 function paginated<T>(items: T[], total: number, page: number, limit: number) {
   return { items, page, limit, total, totalPages: Math.ceil(total / limit) };
 }
@@ -108,15 +133,11 @@ export async function listPayoutsForAdmin(query: {
       orderBy: { id: "desc" },
       skip: (query.page - 1) * query.limit,
       take: query.limit,
-      include: { translator: { include: { user: { select: { fullName: true, phone: true } } } } },
+      include: withTranslator,
     }),
   ]);
 
-  const items = rows.map((row) => ({
-    ...toDto(row),
-    translatorName: row.translator.user.fullName,
-    translatorPhone: row.translator.user.phone,
-  }));
+  const items = rows.map(toAdminDto);
   return paginated(items, total, query.page, query.limit);
 }
 

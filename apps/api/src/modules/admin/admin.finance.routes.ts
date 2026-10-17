@@ -9,7 +9,7 @@ import {
   listPayoutsQuerySchema,
   processPayoutSchema,
 } from "../payouts/payouts.schemas.js";
-import { listPayoutsForAdmin, processPayout } from "../payouts/payouts.service.js";
+import { getPayoutForAdmin, listPayoutsForAdmin, processPayout } from "../payouts/payouts.service.js";
 
 // Mounted inside the admin router, which already requires the ADMIN role.
 export const adminFinanceRouter = Router();
@@ -29,6 +29,11 @@ const callsQuery = pageQuery.extend({
 adminFinanceRouter.get("/payouts", async (req, res) => {
   const query = listPayoutsQuerySchema.parse(req.query);
   res.json(await listPayoutsForAdmin(query));
+});
+
+adminFinanceRouter.get("/payouts/:id", async (req, res) => {
+  const { id } = idParamSchema.parse(req.params);
+  res.json({ payout: await getPayoutForAdmin(id) });
 });
 
 adminFinanceRouter.patch("/payouts/:id", async (req, res) => {

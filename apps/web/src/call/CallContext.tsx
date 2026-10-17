@@ -81,6 +81,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
   const pendingIce = useRef<RTCIceCandidateInit[]>([]);
   const startedSent = useRef(false);
   const signalQueue = useRef<Promise<void>>(Promise.resolve());
+  const lostTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onLostRef = useRef<() => void>(() => undefined);
 
   const setCall = useCallback((next: CallDto | null) => {
     callRef.current = next;
@@ -88,6 +90,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const cleanupMedia = useCallback(() => {
+    if (lostTimer.current) {
+      clearTimeout(lostTimer.current);
+      lostTimer.current = null;
+    }
     if (pcRef.current) {
       pcRef.current.close();
       pcRef.current = null;
@@ -145,7 +151,31 @@ export function CallProvider({ children }: { children: ReactNode }) {
         };
         pc.ontrack = (event) => setRemoteStream(event.streams[0] ?? null);
         pc.onconnectionstatechange = () => {
-          if (pc.connectionState === "connected") onConnected();
+          const state = pc.connectionState;
+          if (state === "connected") {
+            if (lostTimer.current) {
+              clearTimeout(lostTimer.current);
+              lostTimer.current = null;
+            }
+            onConnected();
+          } else if ((state === "disconnected" || state === "failed") && !lostTimer.current) {
+            // Give the connection a short time to recover (the caller tries an ICE restart), then end the call.
+            if (user?.role === "USER" && pc.signalingState === "stable") {
+              pc.createOffer({ iceRestart: true })
+                .then(async (offer) => {
+                  await pc.setLocalDescription(offer);
+                  sendSignal("offer", pc.localDescription?.toJSON());
+                })
+                .catch(() => undefined);
+            }
+            lostTimer.current = setTimeout(
+              () => {
+                lostTimer.current = null;
+                onLostRef.current();
+              },
+              state === "failed" ? 8_000 : 15_000,
+            );
+          }
         };
 
         if (!navigator.mediaDevices?.getUserMedia) {
@@ -174,12 +204,22 @@ export function CallProvider({ children }: { children: ReactNode }) {
       })();
     }
     return peerPromise.current;
-  }, [sendSignal, onConnected]);
+  }, [sendSignal, onConnected, user?.role]);
 
   const endQuietly = useCallback(async () => {
     const current = callRef.current;
     if (current) await api("POST", `/calls/${current.id}/end`).catch(() => undefined);
   }, []);
+
+  // The media connection did not come back: end the call so nobody is charged for silence.
+  useEffect(() => {
+    onLostRef.current = () => {
+      const current = callRef.current;
+      if (!current || isTerminal(current.status)) return;
+      setMediaError("The connection was lost, the call was ended");
+      void endQuietly();
+    };
+  }, [endQuietly]);
 
   const failMedia = useCallback(
     (error: unknown) => {
@@ -267,6 +307,17 @@ export function CallProvider({ children }: { children: ReactNode }) {
       .then(() => handleSignal(message))
       .catch(failMedia);
   });
+
+  // While a call is open, tell the server every few seconds that this side is alive.
+  // If one side goes silent (closed tab, lost network), the server ends the call.
+  const openCallId = call && (call.status === "ACCEPTED" || call.status === "ACTIVE") ? call.id : null;
+  useEffect(() => {
+    if (!socket || openCallId === null) return;
+    const beat = () => socket.emit("call:heartbeat", { callId: openCallId });
+    beat();
+    const timer = setInterval(beat, 5_000);
+    return () => clearInterval(timer);
+  }, [socket, openCallId]);
 
   // After a page reload an unfinished call is shown again, so the user can end it.
   useEffect(() => {
