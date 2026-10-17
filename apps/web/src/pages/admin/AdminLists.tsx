@@ -378,3 +378,118 @@ export function AdminCategories() {
     </>
   );
 }
+
+interface AdminLanguage {
+  id: number;
+  code: string;
+  name: string;
+  _count: { translators: number; calls: number };
+}
+
+export function AdminLanguages() {
+  const list = useAdminList<AdminLanguage>("/admin/languages", "languages");
+  const [form, setForm] = useState<{ id: number | null; code: string; name: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function run(action: () => Promise<unknown>) {
+    setBusy(true);
+    setError(null);
+    try {
+      await action();
+      setForm(null);
+      list.reload();
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <PageHead
+        title="Languages"
+        crumbs={[{ label: "Home", to: "/admin" }, { label: "Translation topics" }, { label: "Languages" }]}
+        addLabel="Add language"
+        onAdd={() => {
+          setError(null);
+          setForm({ id: null, code: "", name: "" });
+        }}
+      />
+      {(list.error || error) && !form && <div className="alert error">{list.error ?? error}</div>}
+      <table className="adm-table">
+        <thead>
+          <tr>
+            <Th>Language</Th>
+            <Th>Code</Th>
+            <Th>Translators</Th>
+            <Th>Calls</Th>
+            <Th sortable={false} />
+          </tr>
+        </thead>
+        <tbody>
+          {(list.items ?? []).map((language) => (
+            <tr key={language.id}>
+              <td>{language.name}</td>
+              <td>{language.code}</td>
+              <td>{language._count.translators}</td>
+              <td>{language._count.calls}</td>
+              <td style={{ whiteSpace: "nowrap" }}>
+                <button
+                  className="adm-eye"
+                  aria-label="Edit"
+                  onClick={() => {
+                    setError(null);
+                    setForm({ id: language.id, code: language.code, name: language.name });
+                  }}
+                >
+                  <Icon name="eye" size={16} />
+                </button>{" "}
+                <button
+                  className="adm-eye"
+                  style={{ fontSize: 11, textDecoration: "underline", color: "#c0392b" }}
+                  onClick={() => {
+                    if (window.confirm(`Delete "${language.name}"? A language that is already used cannot be deleted.`)) {
+                      void run(() => api("DELETE", `/admin/languages/${language.id}`));
+                    }
+                  }}
+                >
+                  Delete
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {list.items !== null && list.items.length === 0 && <div className="adm-empty">No languages yet</div>}
+
+      {form && (
+        <Modal onClose={() => setForm(null)}>
+          <div style={{ padding: 22, minWidth: 320 }}>
+            <h3 style={{ marginBottom: 14 }}>{form.id ? "Edit language" : "New language"}</h3>
+            {error && <div className="alert error">{error}</div>}
+            <Row label="Name">
+              <input className="adm-input-dark" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </Row>
+            <Row label="Code (for example en, ru, vi)">
+              <input className="adm-input-dark" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
+            </Row>
+            <button
+              className="adm-btn-dark"
+              disabled={busy || form.name.trim().length < 1 || form.code.trim().length < 2}
+              onClick={() =>
+                run(() => {
+                  const body = { name: form.name.trim(), code: form.code.trim().toLowerCase() };
+                  return form.id ? api("PATCH", `/admin/languages/${form.id}`, body) : api("POST", "/admin/languages", body);
+                })
+              }
+            >
+              {busy ? "Saving..." : "Save"}
+            </button>
+          </div>
+        </Modal>
+      )}
+    </>
+  );
+}

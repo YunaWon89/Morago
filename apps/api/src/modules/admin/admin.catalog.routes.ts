@@ -24,6 +24,60 @@ const themeCreate = z.object({
 });
 const themeUpdate = themeCreate.partial().extend({ isActive: z.boolean().optional() });
 
+const languageCreate = z.object({
+  code: z.string().trim().toLowerCase().min(2).max(10),
+  name: z.string().trim().min(1).max(100),
+});
+const languageUpdate = languageCreate.partial();
+
+adminCatalogRouter.get("/languages", async (_req, res) => {
+  const languages = await prisma.language.findMany({
+    orderBy: { id: "asc" },
+    include: { _count: { select: { translators: true, calls: true } } },
+  });
+  res.json({ languages });
+});
+
+adminCatalogRouter.post("/languages", async (req, res) => {
+  const data = languageCreate.parse(req.body ?? {});
+  if (await prisma.language.findUnique({ where: { code: data.code } })) {
+    throw new HttpError(409, "A language with this code already exists");
+  }
+  res.status(201).json({ language: await prisma.language.create({ data }) });
+});
+
+adminCatalogRouter.patch("/languages/:id", async (req, res) => {
+  const { id } = idParam.parse(req.params);
+  const data = languageUpdate.parse(req.body ?? {});
+  if (!(await prisma.language.findUnique({ where: { id } }))) {
+    throw new HttpError(404, "Language not found");
+  }
+  if (data.code) {
+    const other = await prisma.language.findUnique({ where: { code: data.code } });
+    if (other && other.id !== id) {
+      throw new HttpError(409, "A language with this code already exists");
+    }
+  }
+  res.json({ language: await prisma.language.update({ where: { id }, data }) });
+});
+
+// A language that translators or calls already use cannot be deleted, otherwise history would break.
+adminCatalogRouter.delete("/languages/:id", async (req, res) => {
+  const { id } = idParam.parse(req.params);
+  const language = await prisma.language.findUnique({
+    where: { id },
+    include: { _count: { select: { translators: true, calls: true } } },
+  });
+  if (!language) {
+    throw new HttpError(404, "Language not found");
+  }
+  if (language._count.translators > 0 || language._count.calls > 0) {
+    throw new HttpError(409, "This language is used by translators or calls and cannot be deleted");
+  }
+  await prisma.language.delete({ where: { id } });
+  res.json({ deleted: true });
+});
+
 adminCatalogRouter.get("/categories", async (_req, res) => {
   const categories = await prisma.category.findMany({
     orderBy: { id: "asc" },

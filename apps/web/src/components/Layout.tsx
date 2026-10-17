@@ -163,5 +163,26 @@ export function SuccessArt() {
 }
 
 export function Loading() {
-  return <div className="empty">Loading...</div>;
+  return (
+    <div className="empty" role="status" aria-live="polite">
+      <span className="spinner" aria-hidden="true" /> Loading...
+    </div>
+  );
+}
+
+// Grey placeholder rows shown while a list is loading.
+export function SkeletonList({ rows = 4 }: { rows?: number }) {
+  return (
+    <div role="status" aria-label="Loading">
+      {Array.from({ length: rows }, (_, index) => (
+        <div key={index} className="list-item skeleton-row" aria-hidden="true">
+          <span className="skeleton" style={{ width: 48, height: 48, borderRadius: 14, flex: "none" }} />
+          <div className="grow">
+            <span className="skeleton" style={{ width: "46%", height: 13 }} />
+            <span className="skeleton" style={{ width: "30%", height: 11, marginTop: 8 }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }

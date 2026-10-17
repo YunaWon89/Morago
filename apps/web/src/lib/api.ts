@@ -113,3 +113,16 @@ export async function apiUpload<T>(path: string, file: File): Promise<T> {
   }
   return data as T;
 }
+
+// Downloads a private file with the login token (an <a href> or <img src> cannot send it) and returns a blob URL.
+export async function apiBlobUrl(path: string): Promise<string> {
+  const token = tokenStore.get();
+  let response: Response;
+  try {
+    response = await fetch(apiUrl("/api" + path), { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  } catch {
+    throw new ApiError(0, "Cannot reach the server. Is the API running?");
+  }
+  if (!response.ok) throw new ApiError(response.status, `Request failed (${response.status})`);
+  return URL.createObjectURL(await response.blob());
+}

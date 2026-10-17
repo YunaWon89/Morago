@@ -61,6 +61,18 @@ function signToken(user: { id: number; role: string }): string {
   });
 }
 
+// Gives a signed-in user a fresh token (the old one stays valid until it expires).
+export async function refreshToken(userId: number) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    throw new HttpError(401, "User not found");
+  }
+  if (user.status === "BLOCKED") {
+    throw new HttpError(403, "Account is blocked");
+  }
+  return { token: signToken(user), expiresInSec: config.jwtExpiresInSeconds };
+}
+
 export async function sendRegistrationCode(phone: string) {
   const existing = await prisma.user.findUnique({ where: { phone } });
   if (existing) {

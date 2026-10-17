@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/AuthContext";
 import { Avatar } from "../../components/Avatar";
 import { Icon } from "../../components/Icon";
-import { BrandHeader } from "../../components/Layout";
+import { BrandHeader, SkeletonList } from "../../components/Layout";
 import { api, errorMessage } from "../../lib/api";
 import { formatDate, formatTime } from "../../lib/format";
 import type { ConversationDto, MessageDto } from "../../lib/types";
@@ -38,7 +38,7 @@ export function Messages() {
         </div>
       </BrandHeader>
       <div className="body inbox">
-        {items === null && <div className="empty">Loading...</div>}
+        {items === null && <SkeletonList />}
         {items !== null && shown.length === 0 && (
           <div className="empty">
             No conversations yet. Open a translator's card and tap the message icon to write to them.

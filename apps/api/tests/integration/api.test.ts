@@ -70,3 +70,21 @@ test("Swagger JSON describes the API", async () => {
     assert.ok(body.paths[path], `${path} is documented`);
   }
 });
+
+test("Swagger documents errors, new endpoints and the Error schema", async () => {
+  const doc = (await (await server.request("/api/docs/openapi.json")).json()) as {
+    paths: Record<string, Record<string, { responses: Record<string, unknown> }>>;
+    components: { schemas: Record<string, unknown> };
+  };
+  assert.ok(doc.components.schemas.Error);
+  assert.ok(doc.paths["/api/auth/refresh"]?.post);
+  assert.ok(doc.paths["/api/admin/languages"]?.post);
+  const getCall = doc.paths["/api/calls/{id}"]?.get;
+  assert.ok(getCall?.responses["401"] && getCall.responses["404"] && getCall.responses["500"]);
+});
+
+test("refresh and the new file routes need a token", async () => {
+  assert.equal((await server.request("/api/auth/refresh", { method: "POST" })).status, 401);
+  assert.equal((await server.request("/api/files")).status, 401);
+  assert.equal((await server.request("/api/admin/languages")).status, 401);
+});

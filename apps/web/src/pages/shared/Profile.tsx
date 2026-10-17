@@ -5,7 +5,7 @@ import { Avatar } from "../../components/Avatar";
 import { AvatarPicker } from "../../components/AvatarPicker";
 import { Field } from "../../components/Field";
 import { Icon } from "../../components/Icon";
-import { BrandHeader, Sheet, TopBar } from "../../components/Layout";
+import { BrandHeader, Sheet, SkeletonList, TopBar } from "../../components/Layout";
 import { useToast } from "../../components/Toast";
 import { api, errorMessage } from "../../lib/api";
 import { formatRelative } from "../../lib/format";
@@ -276,7 +276,7 @@ export function Notifications() {
             </button>
           )}
         </div>
-        {items === null && <div className="empty">Loading...</div>}
+        {items === null && <SkeletonList />}
         {items !== null && items.length === 0 && <div className="empty">No notifications</div>}
         {items?.map((item) => {
           const { title, text } = notificationText(item);
