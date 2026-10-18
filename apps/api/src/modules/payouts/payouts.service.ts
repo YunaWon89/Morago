@@ -22,6 +22,21 @@ function paginated<T>(items: T[], total: number, page: number, limit: number) {
   return { items, page, limit, total, totalPages: Math.ceil(total / limit) };
 }
 
+// Ledger rule: wallet.balance always equals the sum of COMPLETED transactions.
+// - Creating a payout posts a COMPLETED negative PAYOUT entry (the money is really taken from the balance).
+// - PAID changes only the status of the request (the bank transfer); the ledger stays as it is.
+// - REJECTED posts a COMPLETED positive REFUND entry that cancels the PAYOUT entry.
+// So the balance is the same after PENDING and PAID, and after REJECTED it is back to the start.
+export function payoutLedger(status: "PENDING" | "PAID" | "REJECTED", amount: number) {
+  const entries: { type: "PAYOUT" | "REFUND"; amount: number; status: "COMPLETED" }[] = [
+    { type: "PAYOUT", amount: -amount, status: "COMPLETED" },
+  ];
+  if (status === "REJECTED") {
+    entries.push({ type: "REFUND", amount, status: "COMPLETED" });
+  }
+  return entries;
+}
+
 // The requested amount is taken from the balance right away, so it cannot be spent twice.
 export async function createPayout(
   userId: number,
@@ -52,7 +67,7 @@ export async function createPayout(
         payoutRequestId: created.id,
         type: "PAYOUT",
         amount: -input.amount,
-        status: "PENDING",
+        status: "COMPLETED",
       },
     });
     return created;
@@ -116,29 +131,15 @@ export async function processPayout(adminId: number, payoutId: number, status: "
       throw new HttpError(409, "The request has already been processed");
     }
 
-    if (status === "PAID") {
-      await tx.transaction.update({
-        where: { payoutRequestId: payoutId },
-        data: { status: "COMPLETED" },
-      });
-    } else {
-      await tx.transaction.update({
-        where: { payoutRequestId: payoutId },
-        data: { status: "FAILED" },
-      });
+    if (status === "REJECTED") {
       const wallet = await tx.wallet.findUniqueOrThrow({ where: { userId: existing.translatorId } });
       await tx.wallet.update({
         where: { id: wallet.id },
         data: { balance: { increment: existing.amount } },
       });
+      const refund = payoutLedger("REJECTED", Number(existing.amount))[1];
       await tx.transaction.create({
-        data: {
-          walletId: wallet.id,
-          type: "REFUND",
-          amount: existing.amount,
-          status: "COMPLETED",
-          createdById: adminId,
-        },
+        data: { walletId: wallet.id, ...refund, createdById: adminId },
       });
     }
 
@@ -154,5 +155,9 @@ export async function processPayout(adminId: number, payoutId: number, status: "
   const updated = await prisma.payoutRequest.findUniqueOrThrow({ where: { id: payoutId } });
   const dto = toDto(updated);
   emitToUser(updated.translatorId, "payout:updated", dto);
+  emitToUser(updated.translatorId, "notification:new", {
+    type: "SYSTEM",
+    payload: { event: "PAYOUT_STATUS_CHANGED", payoutId, status },
+  });
   return dto;
 }
