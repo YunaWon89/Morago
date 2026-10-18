@@ -266,7 +266,12 @@ export async function startCall(callId: number, user: AuthUser) {
     data: { status: "ACTIVE", startedAt: new Date() },
   });
   if (result.count === 0) {
-    throw new HttpError(409, `The call cannot be started in status ${call.status}`);
+    // The other participant may have confirmed the start a moment earlier.
+    const latest = await loadCall(callId, user);
+    if (latest.status === "ACTIVE") {
+      return toCallDto(latest);
+    }
+    throw new HttpError(409, `The call cannot be started in status ${latest.status}`);
   }
   return reload(callId);
 }

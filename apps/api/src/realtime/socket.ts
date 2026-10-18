@@ -15,6 +15,53 @@ const signalSchema = z.object({
 
 type SignalAck = (result: { ok: boolean; error?: string }) => void;
 
+// Handles one "webrtc:signal" message. It never throws: the second argument comes from the client,
+// so it may be anything (a string, an object), and only a real function is called.
+export async function handleSignal(user: AuthUser, raw: unknown, maybeAck?: unknown) {
+  // The second argument comes from the client, so TypeScript cannot vouch for it.
+  const reply: SignalAck = (result) => {
+    if (typeof maybeAck !== "function") {
+      return;
+    }
+    try {
+      maybeAck(result);
+    } catch {
+      // a broken callback must never crash the server
+    }
+  };
+  try {
+    const message = signalSchema.parse(raw);
+
+    const call = await prisma.call.findUnique({
+      where: { id: message.callId },
+      select: { clientId: true, translatorId: true, status: true },
+    });
+    if (!call || (call.clientId !== user.id && call.translatorId !== user.id)) {
+      throw new HttpError(404, "Call not found");
+    }
+    if (call.status !== "ACCEPTED" && call.status !== "ACTIVE") {
+      throw new HttpError(409, "The call is not in progress");
+    }
+
+    const otherId = call.clientId === user.id ? call.translatorId : call.clientId;
+    emitToUser(otherId, "webrtc:signal", {
+      callId: message.callId,
+      type: message.type,
+      data: message.data,
+      from: user.id,
+    });
+    reply({ ok: true });
+  } catch (error) {
+    const text =
+      error instanceof HttpError
+        ? error.message
+        : error instanceof z.ZodError
+          ? "Invalid signal"
+          : "Signal failed";
+    reply({ ok: false, error: text });
+  }
+}
+
 export function initSocket(httpServer: HttpServer) {
   const io = new Server(httpServer, {
     cors: { origin: config.isProduction ? config.clientUrl : true },
@@ -43,38 +90,8 @@ export function initSocket(httpServer: HttpServer) {
 
     // WebRTC signaling: the server only relays offers, answers and ICE candidates
     // between the two participants of a call. Audio and video never pass through it.
-    socket.on("webrtc:signal", async (raw: unknown, ack?: SignalAck) => {
-      try {
-        const message = signalSchema.parse(raw);
-
-        const call = await prisma.call.findUnique({
-          where: { id: message.callId },
-          select: { clientId: true, translatorId: true, status: true },
-        });
-        if (!call || (call.clientId !== user.id && call.translatorId !== user.id)) {
-          throw new HttpError(404, "Call not found");
-        }
-        if (call.status !== "ACCEPTED" && call.status !== "ACTIVE") {
-          throw new HttpError(409, "The call is not in progress");
-        }
-
-        const otherId = call.clientId === user.id ? call.translatorId : call.clientId;
-        emitToUser(otherId, "webrtc:signal", {
-          callId: message.callId,
-          type: message.type,
-          data: message.data,
-          from: user.id,
-        });
-        ack?.({ ok: true });
-      } catch (error) {
-        const text =
-          error instanceof HttpError
-            ? error.message
-            : error instanceof z.ZodError
-              ? "Invalid signal"
-              : "Signal failed";
-        ack?.({ ok: false, error: text });
-      }
+    socket.on("webrtc:signal", (raw: unknown, maybeAck?: unknown) => {
+      void handleSignal(user, raw, maybeAck);
     });
   });
 

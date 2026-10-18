@@ -306,8 +306,9 @@ async function flushIce() {
 }
 
 // Billing starts when the audio/video connection is really established.
+// Both sides confirm it; the server accepts the first confirmation and ignores the second.
 function onConnected() {
-  if (me.role === "USER" && !startedSent && call?.status === "ACCEPTED") {
+  if (!startedSent && call?.status === "ACCEPTED") {
     startedSent = true;
     run(async () => { await api("POST", `/calls/${call.id}/start`); });
   }
