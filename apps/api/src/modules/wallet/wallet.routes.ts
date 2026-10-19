@@ -4,6 +4,7 @@ import { HttpError } from "../../lib/http-error.js";
 import { prisma } from "../../lib/prisma.js";
 import { config } from "../../config.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
+import { createTopupRequest } from "./wallet.service.js";
 
 export const walletRouter = Router();
 
@@ -72,21 +73,7 @@ const topupSchema = z.object({
 walletRouter.post("/topups", requireRole("USER"), async (req, res) => {
   const { amount, senderName } = topupSchema.parse(req.body ?? {});
 
-  const wallet = await prisma.wallet.findUnique({ where: { userId: req.user!.id } });
-  if (!wallet) {
-    throw new HttpError(404, "Wallet not found");
-  }
-
-  const pending = await prisma.transaction.count({
-    where: { walletId: wallet.id, type: "TOPUP", status: "PENDING" },
-  });
-  if (pending >= 3) {
-    throw new HttpError(409, "You already have pending top-up requests");
-  }
-
-  const created = await prisma.transaction.create({
-    data: { walletId: wallet.id, type: "TOPUP", amount, status: "PENDING", providerRef: senderName },
-  });
+  const created = await createTopupRequest(req.user!.id, amount, senderName);
   res.status(201).json({
     topup: { id: created.id, amount, senderName, status: created.status, createdAt: created.createdAt },
   });
