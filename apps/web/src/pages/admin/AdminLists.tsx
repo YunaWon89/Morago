@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Icon } from "../../components/Icon";
 import { api, errorMessage } from "../../lib/api";
 import { formatDuration } from "../../lib/format";
@@ -77,6 +77,7 @@ interface AdminCategory {
   name: string;
   isActive: boolean;
   _count: { themes: number };
+  themes: { id: number; name: string; nameKo: string | null; isEmergency: boolean; isActive: boolean }[];
 }
 
 interface AdminTheme {
@@ -273,6 +274,11 @@ export function AdminCategories() {
   const [form, setForm] = useState<{ id: number | null; name: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [openIds, setOpenIds] = useState<number[]>([]);
+
+  function toggleOpen(id: number) {
+    setOpenIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
+  }
 
   async function run(action: () => Promise<unknown>) {
     setBusy(true);
@@ -310,10 +316,31 @@ export function AdminCategories() {
           </tr>
         </thead>
         <tbody>
-          {(list.items ?? []).map((category) => (
-            <tr key={category.id}>
+          {(list.items ?? []).map((category) => {
+            const isOpen = openIds.includes(category.id);
+            return (
+            <Fragment key={category.id}>
+            <tr>
               <td>{category.name}</td>
-              <td>{category._count.themes}</td>
+              <td>
+                {category._count.themes === 0 ? (
+                  <span className="adm-muted">No themes</span>
+                ) : (
+                  <button
+                    className="adm-theme-toggle"
+                    aria-expanded={isOpen}
+                    onClick={() => toggleOpen(category.id)}
+                    title={isOpen ? "Hide the list" : "Show all themes"}
+                  >
+                    <span className="adm-theme-preview">
+                      {category.themes.slice(0, 2).map((theme) => theme.name).join(", ")}
+                      {category.themes.length > 2 ? ` +${category.themes.length - 2}` : ""}
+                    </span>
+                    <span className="adm-theme-count">{category._count.themes}</span>
+                    <span aria-hidden="true">{isOpen ? "\u25B4" : "\u25BE"}</span>
+                  </button>
+                )}
+              </td>
               <td>{category.isActive ? "Active" : "Hidden"}</td>
               <td style={{ whiteSpace: "nowrap" }}>
                 <button
@@ -346,7 +373,25 @@ export function AdminCategories() {
                 </button>
               </td>
             </tr>
-          ))}
+            {isOpen && (
+              <tr className="adm-theme-row">
+                <td colSpan={4}>
+                  <ul className="adm-theme-list">
+                    {category.themes.map((theme) => (
+                      <li key={theme.id}>
+                        <strong>{theme.name}</strong>
+                        {theme.nameKo && <span className="adm-muted"> {theme.nameKo}</span>}
+                        {theme.isEmergency && <span className="adm-tag adm-tag-emergency">Emergency</span>}
+                        {!theme.isActive && <span className="adm-tag">Hidden</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </td>
+              </tr>
+            )}
+            </Fragment>
+            );
+          })}
         </tbody>
       </table>
       {list.items !== null && list.items.length === 0 && <div className="adm-empty">No categories yet</div>}

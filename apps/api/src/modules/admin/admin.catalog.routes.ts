@@ -81,7 +81,14 @@ adminCatalogRouter.delete("/languages/:id", async (req, res) => {
 adminCatalogRouter.get("/categories", async (_req, res) => {
   const categories = await prisma.category.findMany({
     orderBy: { id: "asc" },
-    include: { _count: { select: { themes: true } } },
+    include: {
+      _count: { select: { themes: true } },
+      // The admin list shows which themes (subcategories) each category contains.
+      themes: {
+        orderBy: { id: "asc" },
+        select: { id: true, name: true, nameKo: true, isEmergency: true, isActive: true },
+      },
+    },
   });
   res.json({ categories });
 });
